@@ -1,0 +1,11 @@
+{
+  "name": "futoin/core-cpp-api",
+  "version": "0.0.1",
+  "vcs": "git",
+  "plugins": {
+    "release": "futoin.cid.misc.releasetool"
+  },
+  "actions": {
+    "check" : "@cid tool exec make -- -C build/ test"
+  }
+}
