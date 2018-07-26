@@ -33,7 +33,7 @@
 #include <typeinfo>
 #include <unordered_map>
 //---
-#include "details/any.hpp"
+#include "any.hpp"
 #include "errors.hpp"
 //---
 
@@ -57,9 +57,6 @@ namespace futoin {
 
         //---
         constexpr auto MAX_NEXT_ARGS = 4;
-
-        using details::any;
-        using details::any_cast;
 
         /**
          * @brief A special helper to wrap C-strings and objects passed by
@@ -440,7 +437,7 @@ namespace futoin {
          * @brief Step abort with specified error
          */
         [[noreturn]] void error(ErrorCode error, ErrorMessage error_info = {}) {
-            state()["error_info"] = asyncsteps::any(std::move(error_info));
+            state()["error_info"] = any(std::move(error_info));
             handle_error(error);
             throw Error(error);
         }
@@ -539,15 +536,15 @@ namespace futoin {
             loop_logic(asyncsteps::LoopState(
                     label,
                     [handler](asyncsteps::LoopState& ls, AsyncSteps& as) {
-                        Iter& iter = asyncsteps::any_cast<Iter&>(ls.data);
+                        Iter& iter = any_cast<Iter&>(ls.data);
                         auto& pair = *iter;
                         ++iter; // make sure to increment before handler call
                         handler(as, pair.first, pair.second);
                     },
                     [end](asyncsteps::LoopState& ls) {
-                        return asyncsteps::any_cast<Iter&>(ls.data) != end;
+                        return any_cast<Iter&>(ls.data) != end;
                     },
-                    asyncsteps::any(std::move(iter))));
+                    any(std::move(iter))));
             return *this;
         }
 
@@ -566,15 +563,15 @@ namespace futoin {
             loop_logic(asyncsteps::LoopState(
                     label,
                     [handler](asyncsteps::LoopState& ls, AsyncSteps& as) {
-                        Iter& iter = asyncsteps::any_cast<Iter&>(ls.data);
+                        Iter& iter = any_cast<Iter&>(ls.data);
                         auto& val = *iter;
                         ++iter; // make sure to increment before handler call
                         handler(as, ls.i++, val);
                     },
                     [end](asyncsteps::LoopState& ls) {
-                        return asyncsteps::any_cast<Iter&>(ls.data) != end;
+                        return any_cast<Iter&>(ls.data) != end;
                     },
-                    asyncsteps::any(std::move(iter))));
+                    any(std::move(iter))));
             return *this;
         }
 
