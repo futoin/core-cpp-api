@@ -45,7 +45,7 @@ namespace futoin {
      * @brief Canonical FutoIn Error
      */
     class Error : public std::runtime_error {
-      public:
+    public:
         Error(ErrorCode code) noexcept : runtime_error(code) {}
     };
 

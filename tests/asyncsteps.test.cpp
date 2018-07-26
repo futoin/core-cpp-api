@@ -27,13 +27,13 @@ struct TestSteps : AsyncSteps {
     TestSteps() : AsyncSteps(state_) {}
 
     virtual void add_step(
-        asyncsteps::ExecHandler &&exec_h,
-        asyncsteps::ErrorHandler &&error_h) noexcept override {
+            asyncsteps::ExecHandler &&exec_h,
+            asyncsteps::ErrorHandler &&error_h) noexcept override {
         exec_handler_ = std::move(exec_h);
         error_handler_ = std::move(error_h);
     };
-    virtual AsyncSteps &
-    parallel(asyncsteps::ErrorHandler error_h) noexcept override {
+    virtual AsyncSteps &parallel(
+            asyncsteps::ErrorHandler error_h) noexcept override {
         error_handler_ = std::move(error_h);
         return *this;
     };
@@ -162,12 +162,12 @@ BOOST_AUTO_TEST_CASE(async_repeat) {
 
     as.repeat(max, [&](AsyncSteps &, std::size_t) { --count; });
     as.repeat(
-        max,
-        [&](AsyncSteps &, std::size_t i) {
-            BOOST_CHECK_EQUAL(count, i);
-            ++count;
-        },
-        "Some Label");
+            max,
+            [&](AsyncSteps &, std::size_t i) {
+                BOOST_CHECK_EQUAL(count, i);
+                ++count;
+            },
+            "Some Label");
     BOOST_CHECK_EQUAL(count, 0);
 
     for (int i = max; i > 0; --i) {
@@ -191,12 +191,12 @@ BOOST_AUTO_TEST_CASE(async_forEach_vector) {
     }
 
     as.forEach(
-        vec,
-        [&](AsyncSteps &, std::size_t i, int &) {
-            BOOST_CHECK_EQUAL(count, i);
-            ++count;
-        },
-        "Some Label");
+            vec,
+            [&](AsyncSteps &, std::size_t i, int &) {
+                BOOST_CHECK_EQUAL(count, i);
+                ++count;
+            },
+            "Some Label");
 
     for (int i = max; i > 0; --i) {
         ts.exec_handler_(as);
@@ -221,12 +221,12 @@ BOOST_AUTO_TEST_CASE(async_forEach_array) {
     const auto &carr = arr;
 
     as.forEach(
-        carr,
-        [&](AsyncSteps &, std::size_t i, int) {
-            BOOST_CHECK_EQUAL(count, i);
-            ++count;
-        },
-        "Some Label");
+            carr,
+            [&](AsyncSteps &, std::size_t i, int) {
+                BOOST_CHECK_EQUAL(count, i);
+                ++count;
+            },
+            "Some Label");
 
     for (int i = max; i > 0; --i) {
         ts.exec_handler_(as);
@@ -251,14 +251,14 @@ BOOST_AUTO_TEST_CASE(async_forEach_map) {
     auto iter = std::begin(map);
 
     as.forEach(
-        map,
-        [&](AsyncSteps &, const std::string &k, const int &v) {
-            BOOST_CHECK_EQUAL(k, iter->first);
-            BOOST_CHECK_EQUAL(v, iter->second);
-            ++iter;
-            ++count;
-        },
-        "Some Label");
+            map,
+            [&](AsyncSteps &, const std::string &k, const int &v) {
+                BOOST_CHECK_EQUAL(k, iter->first);
+                BOOST_CHECK_EQUAL(v, iter->second);
+                ++iter;
+                ++count;
+            },
+            "Some Label");
 
     for (int i = max; i > 0; --i) {
         ts.exec_handler_(as);
