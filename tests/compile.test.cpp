@@ -17,6 +17,7 @@
 
 #include "futoin/all.hpp"
 
-int main() {
+int main()
+{
     return 0;
 }
