@@ -34,7 +34,7 @@ namespace futoin {
      * Unlike traditional integral error codes, FutoIn errors codes are designed
      * to be self-descriptive to be easily transfered over network.
      */
-    using ErrorCode = const char *;
+    using ErrorCode = const char*;
 
     /**
      * @brief FutoIn error message in UTF-8
@@ -44,7 +44,8 @@ namespace futoin {
     /**
      * @brief Canonical FutoIn Error
      */
-    class Error : public std::runtime_error {
+    class Error : public std::runtime_error
+    {
     public:
         Error(ErrorCode code) noexcept : runtime_error(code) {}
     };
