@@ -18,8 +18,8 @@
 //! @brief List of standard FutoIn error codes
 //-----------------------------------------------------------------------------
 
-#ifndef FTN_ERRORS_HPP
-#define FTN_ERRORS_HPP
+#ifndef FUTOIN_ERRORS_HPP
+#define FUTOIN_ERRORS_HPP
 //---
 
 #include <stdexcept>
@@ -46,10 +46,7 @@ namespace futoin {
      */
     class Error : public std::runtime_error {
       public:
-        Error(ErrorCode code, ErrorMessage message) noexcept
-            : runtime_error(code), message(message) {}
-
-        const ErrorMessage message;
+        Error(ErrorCode code) noexcept : runtime_error(code) {}
     };
 
     /**
@@ -158,4 +155,4 @@ namespace futoin {
 } // namespace futoin
 
 //---
-#endif // FTN_ERRORS_HPP
+#endif // FUTOIN_ERRORS_HPP

@@ -18,20 +18,48 @@
 //! @brief Helper for C++17 std::any backward compatibility
 //-----------------------------------------------------------------------------
 
-#ifndef FTN_DETAILS_FASTANY_HPP
-#define FTN_DETAILS_FASTANY_HPP
+#ifndef FUTOIN_DETAILS_ANY_HPP
+#define FUTOIN_DETAILS_ANY_HPP
 //---
 
 #if __cplusplus < 201703L
+#    define FUTOIN_USING_OWN_ANY
+#endif
+
+#ifdef FUTOIN_USING_OWN_ANY
 #    include <array>
+#    include <iostream>
 #    include <typeinfo>
+#    ifdef __GNUC__
+#        include <cxxabi.h>
+#    endif
 #else
 #    include <any>
 #endif
 
 namespace futoin {
     namespace details {
-#if __cplusplus < 201703L
+#ifdef FUTOIN_USING_OWN_ANY
+        static inline std::string demangle(const std::type_info &ti) {
+#    ifdef __GNUC__
+            int status;
+            char *name =
+                abi::__cxa_demangle(ti.name(), nullptr, nullptr, &status);
+            std::string ret{name};
+            free(name);
+            return ret;
+#    else
+            return ti.name();
+#    endif
+        }
+
+        [[noreturn]] static inline void
+        throw_bad_cast(const std::type_info &src, const std::type_info &dst) {
+            std::cerr << "[FATAL] bad any cast: " << demangle(src) << " -> "
+                      << demangle(dst) << std::endl;
+            throw std::bad_cast();
+        }
+
         class any {
           public:
             any() noexcept
@@ -46,7 +74,8 @@ namespace futoin {
                 other.control_ = default_control;
             }
 
-            template <class T> any(T &&v) : type_info_(&typeid(T)) {
+            template <class T>
+            explicit any(T &&v) : type_info_(&typeid(T)) { // NOLINT
                 using U = typename std::remove_cv<
                     typename std::remove_reference<T>::type>::type;
                 Accessor<U>::set(*this, std::forward<U>(v));
@@ -108,10 +137,12 @@ namespace futoin {
             std::array<void *, 8> data_;
 
             static constexpr const std::type_info *void_info_ = &typeid(void);
-            static void default_control(ControlMode, any &, any &) {}
+            static void default_control(ControlMode, any &, any &) {} // NOLINT
 
             template <
-                typename T, bool is_fundamental = std::is_fundamental<T>::value,
+                typename T,
+                bool is_fundamental =
+                    std::is_fundamental<T>::value || std::is_pointer<T>::value,
                 bool is_small = (sizeof(T) <= sizeof(data_))>
             struct Accessor {};
 
@@ -133,18 +164,18 @@ namespace futoin {
 
         template <typename T> struct any::Accessor<T, true, true> {
             static inline void set(any &that, T v) {
-                T *p = reinterpret_cast<T *>(that.data_.data());
+                auto p = reinterpret_cast<T *>((void *)that.data_.data());
                 *p = v;
 
                 that.control_ = [](ControlMode mode, any &that, any &other) {
-                    T *p = reinterpret_cast<T *>(that.data_.data());
+                    auto p = reinterpret_cast<T *>((void *)that.data_.data());
 
                     switch (mode) {
                     case Cleanup:
                         that.control_ = default_control;
                         break;
                     case Move:
-                        *reinterpret_cast<T *>(other.data_.data()) = *p;
+                        *reinterpret_cast<T *>((void *)other.data_.data()) = *p;
                         break;
                     }
                 };
@@ -152,10 +183,10 @@ namespace futoin {
 
             static T *get(any &that) {
                 if (that.type_info_->hash_code() == typeid(T).hash_code()) {
-                    return reinterpret_cast<T *>(that.data_.data());
+                    return reinterpret_cast<T *>((void *)that.data_.data());
                 }
 
-                throw std::bad_cast();
+                throw_bad_cast(*(that.type_info_), typeid(T));
             }
         };
 
@@ -164,7 +195,7 @@ namespace futoin {
                 new (that.data_.data()) T(std::forward<T>(v));
 
                 that.control_ = [](ControlMode mode, any &that, any &other) {
-                    T *p = reinterpret_cast<T *>(that.data_.data());
+                    auto p = reinterpret_cast<T *>(that.data_.data());
 
                     switch (mode) {
                     case Cleanup:
@@ -183,17 +214,17 @@ namespace futoin {
                     return reinterpret_cast<T *>(that.data_.data());
                 }
 
-                throw std::bad_cast();
+                throw_bad_cast(*(that.type_info_), typeid(T));
             }
         };
 
         template <typename T> struct any::Accessor<T, false, false> {
             static inline void set(any &that, T &&v) {
-                T *p = new T(std::forward<T>(v));
+                auto p = new T(std::forward<T>(v));
                 that.data_[0] = p;
 
                 that.control_ = [](ControlMode mode, any &that, any &other) {
-                    T *p = reinterpret_cast<T *>(that.data_[0]);
+                    auto p = reinterpret_cast<T *>(that.data_[0]);
 
                     switch (mode) {
                     case Cleanup:
@@ -202,7 +233,7 @@ namespace futoin {
                         break;
                     case Move:
                         other.data_[0] = p;
-                        that.data_[0] = 0;
+                        that.data_[0] = nullptr;
                         break;
                     }
                 };
@@ -213,7 +244,14 @@ namespace futoin {
                     return reinterpret_cast<T *>(that.data_[0]);
                 }
 
-                throw std::bad_cast();
+                throw_bad_cast(*(that.type_info_), typeid(T));
+            }
+        };
+
+        template <> struct any::Accessor<any, false, false> {
+            template <typename A, typename B>
+            static inline void set(A &, B &&) { // NOLINT
+                static_assert(!std::is_same<A, B>::value, "Invalid any in any");
             }
         };
 
@@ -242,4 +280,4 @@ namespace futoin {
 } // namespace futoin
 
 //---
-#endif // FTN_DETAILS_FASTANY_HPP
+#endif // FUTOIN_DETAILS_ANY_HPP

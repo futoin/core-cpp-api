@@ -18,8 +18,8 @@
 //! @brief Include all available native API
 //-----------------------------------------------------------------------------
 
-#ifndef FTN_ALL_HPP
-#define FTN_ALL_HPP
+#ifndef FUTOIN_ALL_HPP
+#define FUTOIN_ALL_HPP
 //---
 
 #include "asyncsteps.hpp"
@@ -30,4 +30,4 @@
 namespace futoin {}
 
 //---
-#endif // FTN_ALL_HPP
+#endif // FUTOIN_ALL_HPP

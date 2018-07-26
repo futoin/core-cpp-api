@@ -19,8 +19,8 @@
 //! @sa https://specs.futoin.org/final/preview/ftn12_async_api.html
 //-----------------------------------------------------------------------------
 
-#ifndef FTN_ASYNCSTEPS_HPP
-#define FTN_ASYNCSTEPS_HPP
+#ifndef FUTOIN_ASYNCSTEPS_HPP
+#define FUTOIN_ASYNCSTEPS_HPP
 //---
 
 #include "details/reqcpp11.hpp"
@@ -45,26 +45,15 @@ namespace futoin {
      * @brief Details of AsyncSteps interface
      */
     namespace asyncsteps {
+        class LoopState;
+
         using GenericCallback = std::function<void(AsyncSteps &)>;
         using ExecHandler = GenericCallback;
         using ErrorHandler = std::function<void(AsyncSteps &, ErrorCode)>;
         using CancelCallback = GenericCallback;
-        
-
-        /**
-         * @brief Interface of Async reactor
-         */
-        class AsyncTool {
-          protected:
-            AsyncTool() = default;
-            virtual ~AsyncTool() noexcept = 0;
-
-          private:
-            AsyncTool(const AsyncTool &) = delete;
-            AsyncTool(AsyncTool &&) = delete;
-            AsyncTool &operator=(const AsyncTool &) = delete;
-            AsyncTool &operator=(AsyncTool &&) = delete;
-        };
+        using LoopLabel = const char *;
+        using LoopHandler = std::function<void(LoopState &, AsyncSteps &)>;
+        using LoopCondition = std::function<bool(LoopState &)>;
 
         //---
         constexpr auto MAX_NEXT_ARGS = 4;
@@ -138,7 +127,7 @@ namespace futoin {
                     asi,
                     any_cast<typename std::remove_reference<A>::type &&>(*p),
                     any_cast<typename std::remove_reference<B>::type &&>(
-                        *(p + 1)));
+                        p + 1));
             }
             template <typename A, typename B, typename C>
             inline void call(
@@ -201,6 +190,56 @@ namespace futoin {
         //---
 
         using State = std::unordered_map<std::string, any>;
+
+        //---
+        struct LoopState {
+            LoopState(
+                LoopLabel label, LoopHandler &&handler,
+                LoopCondition &&cond = {}, any &&data = {})
+                : i(0), label(label), handler(handler), cond(cond),
+                  data(std::forward<any>(data)) {}
+
+            LoopState() = default;
+            LoopState(LoopState &&) = default;
+            LoopState &operator=(LoopState &&) = default;
+
+            LoopState(const LoopState &) = delete;
+            LoopState &operator=(const LoopState &) = delete;
+
+            std::size_t i;
+            LoopLabel label;
+            LoopHandler handler;
+            LoopCondition cond;
+            any data;
+        };
+
+        //---
+        class LoopBreak : public Error {
+          public:
+            LoopBreak(LoopLabel label)
+                : Error(errors::LoopBreak), label_(label) {}
+
+            inline LoopLabel label() {
+                return label_;
+            }
+
+          private:
+            LoopLabel label_;
+        };
+
+        //---
+        class LoopContinue : public Error {
+          public:
+            LoopContinue(LoopLabel label)
+                : Error(errors::LoopCont), label_(label) {}
+
+            inline LoopLabel label() {
+                return label_;
+            }
+
+          private:
+            LoopLabel label_;
+        };
     } // namespace asyncsteps
 
     /**
@@ -221,6 +260,9 @@ namespace futoin {
      */
     class AsyncSteps {
       public:
+        AsyncSteps &operator=(const AsyncSteps &) = delete;
+        AsyncSteps &operator=(AsyncSteps &&) = delete;
+
         /**
          * @name Common API
          */
@@ -259,7 +301,7 @@ namespace futoin {
         AsyncSteps &
         add(const F &functor_handler,
             asyncsteps::ErrorHandler error_handler = {}) noexcept {
-            typedef typename asyncsteps::StripFunctorClass<F>::type FP;
+            using FP = typename asyncsteps::StripFunctorClass<F>::type;
             return add(
                 std::move(std::function<FP>(functor_handler)),
                 std::move(error_handler));
@@ -317,7 +359,7 @@ namespace futoin {
         AsyncSteps &sync(
             ISync &obj, const F &functor_handler,
             asyncsteps::ErrorHandler error_handler = {}) noexcept {
-            typedef typename asyncsteps::StripFunctorClass<F>::type FP;
+            using FP = typename asyncsteps::StripFunctorClass<F>::type;
             return obj.sync(
                 *this, std::move(std::function<FP>(functor_handler)),
                 std::move(error_handler));
@@ -346,7 +388,11 @@ namespace futoin {
         /**
          * @brief Step abort with specified error
          */
-        virtual void error(ErrorCode, ErrorMessage = {}) throw(Error) = 0;
+        [[noreturn]] void error(ErrorCode error, ErrorMessage error_info = {}) {
+            state["error_info"] = error_info;
+            handle_error(error);
+            throw Error(error);
+        }
 
         /**
          * @brief Set time limit of execution.
@@ -387,6 +433,105 @@ namespace futoin {
          */
         ///@{
 
+        /**
+         * @brief Generic infinite loop
+         */
+        AsyncSteps &loop(
+            const asyncsteps::ExecHandler &handler,
+            asyncsteps::LoopLabel label = nullptr) {
+            loop_logic(asyncsteps::LoopState(
+                label, [handler](asyncsteps::LoopState &, AsyncSteps &as) {
+                    handler(as);
+                }));
+            return *this;
+        }
+
+        /**
+         * @brief Loop with iteration limit
+         */
+        AsyncSteps &repeat(
+            std::size_t count,
+            const std::function<void(AsyncSteps &, std::size_t i)> &handler,
+            asyncsteps::LoopLabel label = nullptr) {
+            loop_logic(asyncsteps::LoopState(
+                label,
+                [handler](asyncsteps::LoopState &ls, AsyncSteps &as) {
+                    handler(as, ls.i++);
+                },
+                [count](asyncsteps::LoopState &ls) { return ls.i < count; }));
+            return *this;
+        }
+
+        /**
+         * @brief Loop over std::map-like container
+         */
+        template <
+            typename C, typename F, typename V = typename C::mapped_type,
+            bool map = true>
+        AsyncSteps &
+        forEach(C &c, const F &handler, asyncsteps::LoopLabel label = nullptr) {
+
+            auto iter = std::begin(c);
+            auto end = std::end(c);
+            using Iter = decltype(iter);
+
+            loop_logic(asyncsteps::LoopState(
+                label,
+                [handler](asyncsteps::LoopState &ls, AsyncSteps &as) {
+                    Iter &iter = asyncsteps::any_cast<Iter &>(ls.data);
+                    auto &pair = *iter;
+                    ++iter; // make sure to increment before handler call
+                    handler(as, pair.first, pair.second);
+                },
+                [end](asyncsteps::LoopState &ls) {
+                    return asyncsteps::any_cast<Iter &>(ls.data) != end;
+                },
+                asyncsteps::any(std::move(iter))));
+            return *this;
+        }
+
+        /**
+         * @brief Loop over std::vector-like container
+         */
+        template <typename C, typename F, typename V = decltype(C().back())>
+        AsyncSteps &
+        forEach(C &c, const F &handler, asyncsteps::LoopLabel label = nullptr) {
+
+            auto iter = std::begin(c);
+            auto end = std::end(c);
+            using Iter = decltype(iter);
+
+            loop_logic(asyncsteps::LoopState(
+                label,
+                [handler](asyncsteps::LoopState &ls, AsyncSteps &as) {
+                    Iter &iter = asyncsteps::any_cast<Iter &>(ls.data);
+                    auto &val = *iter;
+                    ++iter; // make sure to increment before handler call
+                    handler(as, ls.i++, val);
+                },
+                [end](asyncsteps::LoopState &ls) {
+                    return asyncsteps::any_cast<Iter &>(ls.data) != end;
+                },
+                asyncsteps::any(std::move(iter))));
+            return *this;
+        }
+
+        /**
+         * @brief Break async loop.
+         */
+        [[noreturn]] inline void
+        breakLoop(asyncsteps::LoopLabel label = nullptr) {
+            throw asyncsteps::LoopBreak(label);
+        }
+
+        /**
+         * @brief Continue async loop from the next iteration.
+         */
+        [[noreturn]] inline void
+        continueLoop(asyncsteps::LoopLabel label = nullptr) {
+            throw asyncsteps::LoopContinue(label);
+        }
+
         ///@}
 
       protected:
@@ -395,7 +540,9 @@ namespace futoin {
 
         virtual void
         add_step(asyncsteps::ExecHandler &&, asyncsteps::ErrorHandler &&) = 0;
+        virtual void handle_error(ErrorCode) = 0;
         virtual asyncsteps::NextArgs &nextargs() noexcept = 0;
+        virtual void loop_logic(asyncsteps::LoopState &&) noexcept = 0;
 
         /**
          * @name Control API
@@ -413,17 +560,12 @@ namespace futoin {
         virtual void cancel() noexcept = 0;
 
         ///@}
-
-      private:
-        AsyncSteps &operator=(const AsyncSteps &) = delete;
-        AsyncSteps &operator=(AsyncSteps &&) = delete;
     };
 
     // Ensure d-tors are available even when declared pure virtual
-    asyncsteps::AsyncTool::~AsyncTool() noexcept {}
-    AsyncSteps::~AsyncSteps() noexcept {}
-    ISync::~ISync() noexcept {}
+    inline AsyncSteps::~AsyncSteps() noexcept = default;
+    inline ISync::~ISync() noexcept = default;
 } // namespace futoin
 
 //---
-#endif // FTN_ASYNCSTEPS_HPP
+#endif // FUTOIN_ASYNCSTEPS_HPP
