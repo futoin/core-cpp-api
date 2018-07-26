@@ -15,7 +15,7 @@
 //   limitations under the License.
 //-----------------------------------------------------------------------------
 
-#include "futoin/all.hpp"
+#include <futoin/all.hpp>
 
 int main()
 {

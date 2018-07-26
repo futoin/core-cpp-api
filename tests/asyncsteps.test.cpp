@@ -16,52 +16,51 @@
 //-----------------------------------------------------------------------------
 
 #define BOOST_TEST_MAIN
-#include "../include/futoin/asyncsteps.hpp"
 #include <array>
 #include <boost/test/unit_test.hpp>
+#include <futoin/asyncsteps.hpp>
 #include <vector>
 
 using namespace futoin;
 
 struct TestSteps : AsyncSteps
 {
-    virtual asyncsteps::State& state() noexcept override
+    asyncsteps::State& state() noexcept override
     {
         return state_;
     }
 
-    virtual void add_step(
+    void add_step(
             asyncsteps::ExecHandler&& exec_h,
             asyncsteps::ErrorHandler&& error_h) noexcept override
     {
         exec_handler_ = std::move(exec_h);
         error_handler_ = std::move(error_h);
     };
-    virtual AsyncSteps& parallel(
-            asyncsteps::ErrorHandler error_h) noexcept override
+    AsyncSteps& parallel(asyncsteps::ErrorHandler error_h) noexcept override
     {
         error_handler_ = std::move(error_h);
         return *this;
     };
-    virtual void success() noexcept override{};
-    virtual void handle_error(ErrorCode) override{};
+    void success() noexcept override {}
+    void handle_error(ErrorCode /*code*/) override {}
 
-    virtual ~TestSteps() noexcept override{};
-    virtual asyncsteps::NextArgs& nextargs() noexcept override
+    ~TestSteps() noexcept override = default;
+    asyncsteps::NextArgs& nextargs() noexcept override
     {
         return next_args_;
     };
-    virtual AsyncSteps& copyFrom(AsyncSteps&) noexcept override
+    AsyncSteps& copyFrom(AsyncSteps& /*asi*/) noexcept override
     {
         return *this;
     }
 
-    virtual void setTimeout(std::chrono::milliseconds) noexcept override {}
-    virtual void setCancel(asyncsteps::CancelCallback) noexcept override {}
-    virtual void waitExternal() noexcept override {}
-    virtual void execute() noexcept override {}
-    virtual void cancel() noexcept override {}
-    virtual void loop_logic(asyncsteps::LoopState&& ls) noexcept override
+    void setTimeout(std::chrono::milliseconds /*to*/) noexcept override {}
+    void setCancel(asyncsteps::CancelCallback /*cb*/) noexcept override {}
+    void waitExternal() noexcept override {}
+    void execute() noexcept override {}
+    void cancel() noexcept override {}
+    void loop_logic(asyncsteps::LoopState&& ls) noexcept override
     {
         asyncsteps::LoopState& this_ls = loop_state_;
         this_ls = std::forward<asyncsteps::LoopState>(ls);
@@ -77,7 +76,7 @@ struct TestSteps : AsyncSteps
     asyncsteps::LoopState loop_state_;
 };
 
-BOOST_AUTO_TEST_CASE(success_with_args)
+BOOST_AUTO_TEST_CASE(success_with_args) // NOLINT
 {
     TestSteps ts;
     AsyncSteps& as = ts;
@@ -90,7 +89,7 @@ BOOST_AUTO_TEST_CASE(success_with_args)
     as.success(std::vector<int>());
 }
 
-BOOST_AUTO_TEST_CASE(add_with_args)
+BOOST_AUTO_TEST_CASE(add_with_args) // NOLINT
 {
     TestSteps ts;
     AsyncSteps& as = ts;
@@ -104,7 +103,7 @@ BOOST_AUTO_TEST_CASE(add_with_args)
     as.add([](AsyncSteps&, std::vector<int>&&) {});
 }
 
-BOOST_AUTO_TEST_CASE(exec_handlers)
+BOOST_AUTO_TEST_CASE(exec_handlers) // NOLINT
 {
     TestSteps ts;
     AsyncSteps& as = ts;
@@ -146,7 +145,7 @@ BOOST_AUTO_TEST_CASE(exec_handlers)
     BOOST_CHECK_EQUAL(count, 4);
 }
 
-BOOST_AUTO_TEST_CASE(async_loop)
+BOOST_AUTO_TEST_CASE(async_loop) // NOLINT
 {
     TestSteps ts;
     AsyncSteps& as = ts;
@@ -166,7 +165,7 @@ BOOST_AUTO_TEST_CASE(async_loop)
     BOOST_CHECK_EQUAL(count, max);
 }
 
-BOOST_AUTO_TEST_CASE(async_repeat)
+BOOST_AUTO_TEST_CASE(async_repeat) // NOLINT
 {
     TestSteps ts;
     AsyncSteps& as = ts;
@@ -191,7 +190,7 @@ BOOST_AUTO_TEST_CASE(async_repeat)
     BOOST_CHECK_EQUAL(count, max);
 }
 
-BOOST_AUTO_TEST_CASE(async_forEach_vector)
+BOOST_AUTO_TEST_CASE(async_forEach_vector) // NOLINT
 {
     TestSteps ts;
     AsyncSteps& as = ts;
@@ -220,7 +219,7 @@ BOOST_AUTO_TEST_CASE(async_forEach_vector)
     BOOST_CHECK_EQUAL(count, max);
 }
 
-BOOST_AUTO_TEST_CASE(async_forEach_array)
+BOOST_AUTO_TEST_CASE(async_forEach_array) // NOLINT
 {
     TestSteps ts;
     AsyncSteps& as = ts;
@@ -251,7 +250,7 @@ BOOST_AUTO_TEST_CASE(async_forEach_array)
     BOOST_CHECK_EQUAL(count, max);
 }
 
-BOOST_AUTO_TEST_CASE(async_forEach_map)
+BOOST_AUTO_TEST_CASE(async_forEach_map) // NOLINT
 {
     TestSteps ts;
     AsyncSteps& as = ts;
@@ -284,7 +283,7 @@ BOOST_AUTO_TEST_CASE(async_forEach_map)
     BOOST_CHECK_EQUAL(count, max);
 }
 
-BOOST_AUTO_TEST_CASE(async_error)
+BOOST_AUTO_TEST_CASE(async_error) // NOLINT
 {
     TestSteps ts;
     AsyncSteps& as = ts;
@@ -293,7 +292,7 @@ BOOST_AUTO_TEST_CASE(async_error)
     BOOST_CHECK_THROW(as.error("Some Code", "Some message"), futoin::Error);
 }
 
-BOOST_AUTO_TEST_CASE(async_loop_control)
+BOOST_AUTO_TEST_CASE(async_loop_control) // NOLINT
 {
     TestSteps ts;
     AsyncSteps& as = ts;

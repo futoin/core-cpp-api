@@ -41,7 +41,7 @@ add_compile_options(
 )
 include_directories( AFTER include )
 
-#add_library(futoin_api STATIC ${FUTOIN_API_SRC})
+#add_library(${PROJECT_NAME} STATIC ${FUTOIN_API_SRC})
 
 #--------------------------------------
 # Project testing
@@ -66,6 +66,7 @@ if (FUTOIN_API_WITH_TESTS)
     file(GLOB_RECURSE ALL_SRC_FILES
         ${CMAKE_SOURCE_DIR}/include/*.?pp
         ${CMAKE_SOURCE_DIR}/src/*.?pp
+        ${CMAKE_CURRENT_LIST_DIR}/tests/*.cpp
     )
     set(LINT_SRC_FILES ${ALL_SRC_FILES})
     list(FILTER LINT_SRC_FILES EXCLUDE REGEX reqcpp)
@@ -117,6 +118,8 @@ if (FUTOIN_API_WITH_TESTS)
         #-fix
         -format-style=file
         ${LINT_SRC_FILES}
+        --
+        -I${CMAKE_CURRENT_LIST_DIR}/include/
     )
     
     add_custom_target(
@@ -125,7 +128,6 @@ if (FUTOIN_API_WITH_TESTS)
         -style=file
         -i
         ${ALL_SRC_FILES}
-        ${CMAKE_CURRENT_LIST_DIR}/tests/*.cpp
     )
 endif()
 
