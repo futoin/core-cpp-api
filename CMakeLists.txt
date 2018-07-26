@@ -67,12 +67,14 @@ if (FUTOIN_API_WITH_TESTS)
         ${CMAKE_SOURCE_DIR}/include/*.?pp
         ${CMAKE_SOURCE_DIR}/src/*.?pp
     )
+    set(LINT_SRC_FILES ${ALL_SRC_FILES})
+    list(FILTER LINT_SRC_FILES EXCLUDE REGEX reqcpp)
     
     get_target_property(BOOST_INC_DIRS "Boost::boost" INTERFACE_INCLUDE_DIRECTORIES)
 
     #---
     add_custom_target(
-        cppcheck ALL
+        cppcheck #ALL
         COMMAND /usr/bin/cppcheck
         --enable=warning,style,performance,portability,information,missingInclude
         --std=c++11
@@ -86,7 +88,7 @@ if (FUTOIN_API_WITH_TESTS)
     )
     
     add_custom_target(
-        cppcheck-tests
+        cppcheck-tests #ALL
         COMMAND /usr/bin/cppcheck
         --enable=warning,performance,portability,information
         --std=c++11
@@ -108,12 +110,13 @@ if (FUTOIN_API_WITH_TESTS)
     
     #---
     add_custom_target(
-        clangtidy
+        clangtidy ALL
         COMMAND /usr/bin/clang-tidy-6.0
-        -fix
+        -checks=bugprone-*,cert-*,clang-analyzer-*,clang-analyzer-*,llvm-*,misc-*,modernize-*,performance-*,readability-*
+        #-checks=*
+        #-fix
         -format-style=file
-        -std=c++11
-        ${ALL_SRC_FILES}
+        ${LINT_SRC_FILES}
     )
     
     add_custom_target(
