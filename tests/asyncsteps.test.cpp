@@ -1,4 +1,4 @@
-// //-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 //   Copyright 2018 FutoIn Project
 //   Copyright 2018 Andrey Galkin
 //
@@ -16,10 +16,13 @@
 //-----------------------------------------------------------------------------
 
 #define BOOST_TEST_MAIN
-#include <array>
+
 #include <boost/test/unit_test.hpp>
-#include <futoin/asyncsteps.hpp>
+
+#include <array>
 #include <vector>
+
+#include <futoin/asyncsteps.hpp>
 
 using namespace futoin;
 
