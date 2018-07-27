@@ -15,9 +15,4 @@
 //   limitations under the License.
 //-----------------------------------------------------------------------------
 
-#include <futoin/all.hpp>
-
-int main()
-{
-    return 0;
-}
+#include "futoin/all.hpp"

@@ -1,5 +1,5 @@
 
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
 
 #--------------------------------------
 # Hunter init
@@ -20,52 +20,73 @@ project(futoin_api
         VERSION "0.0.1"
         LANGUAGES CXX)
 
-option(FUTOIN_API_WITH_TESTS "Build with tests" ON)
-option(FUTOIN_API_WITH_DOCS "Build documentation" ON)
+# Options
+#-----
+option(FUTOIN_WITH_TESTS "Build with tests" ON)
+option(FUTOIN_WITH_DOCS "Build documentation" ON)
 
-if (FUTOIN_API_WITH_TESTS)
+# Deps
+#-----
+if (FUTOIN_WITH_TESTS)
     hunter_add_package(Boost COMPONENTS test)
     find_package(Boost CONFIG REQUIRED unit_test_framework)
 endif()
 
+# Sources
+#-----
 file(GLOB_RECURSE FUTOIN_API_SRC
-    ${CMAKE_SOURCE_DIR}/include/*.?pp
-    ${CMAKE_SOURCE_DIR}/src/*.?pp
+    ${CMAKE_CURRENT_LIST_DIR}/include/*.?pp
+    ${CMAKE_CURRENT_LIST_DIR}/src/*.?pp
 )
 
-add_compile_options(
-    -std=c++11
-    -Wall
-    -Wextra
-    -Werror
-)
-include_directories( AFTER include )
+# Result objects
+#-----
+add_library(${PROJECT_NAME} ${FUTOIN_API_SRC})
+add_library(futoin::api ALIAS ${PROJECT_NAME})
 
-#add_library(${PROJECT_NAME} STATIC ${FUTOIN_API_SRC})
+target_include_directories(${PROJECT_NAME} PUBLIC
+    ${CMAKE_CURRENT_LIST_DIR}/include
+)
+# since CMake 3.8
+#target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_11 )
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    CXX_STANDARD 11
+    CXX_STANDARD_REQUIRED YES
+    CXX_EXTENSIONS NO
+)
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
+    target_compile_options(${PROJECT_NAME} PRIVATE
+        # see target_compile_features
+        -std=c++11
+        -Wall
+        -Wextra
+        -Werror
+    )
+endif()
+
 
 #--------------------------------------
 # Project testing
 #--------------------------------------
-if (FUTOIN_API_WITH_TESTS)
+if (FUTOIN_WITH_TESTS)
     include(CTest)
     
     enable_testing()
 
-    add_executable(CompileTest tests/compile.test.cpp)
-    add_test(Compile CompileTest)
-
+    #---
     add_executable(AsyncStepsTest tests/asyncsteps.test.cpp)
-    target_link_libraries(AsyncStepsTest PRIVATE Boost::unit_test_framework)
+    target_link_libraries(AsyncStepsTest
+        PRIVATE ${PROJECT_NAME} Boost::unit_test_framework)
     add_test(AsyncSteps AsyncStepsTest)
 endif()
 
 #--------------------------------------
 # Static analysis & formatting
 #--------------------------------------
-if (FUTOIN_API_WITH_TESTS)
+if (FUTOIN_WITH_TESTS)
     file(GLOB_RECURSE ALL_SRC_FILES
-        ${CMAKE_SOURCE_DIR}/include/*.?pp
-        ${CMAKE_SOURCE_DIR}/src/*.?pp
+        ${CMAKE_CURRENT_LIST_DIR}/include/*.?pp
+        ${CMAKE_CURRENT_LIST_DIR}/src/*.?pp
         ${CMAKE_CURRENT_LIST_DIR}/tests/*.cpp
     )
     set(LINT_SRC_FILES ${ALL_SRC_FILES})
@@ -143,7 +164,7 @@ if (FUTOIN_API_WITH_DOCS)
         WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
     )
     # prevent Doxygen segfault on invalid code
-    add_dependencies(docs CompileTest)
+    add_dependencies(docs ${PROJECT_NAME})
 endif()
 
 #--------------------------------------
