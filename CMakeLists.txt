@@ -132,7 +132,7 @@ if (FUTOIN_WITH_TESTS)
     
     #---
     add_custom_target(
-        clangtidy-api ALL
+        clangtidy-api
         COMMAND /usr/bin/clang-tidy-6.0
         -checks=bugprone-*,cert-*,clang-analyzer-*,clang-analyzer-*,llvm-*,misc-*,modernize-*,performance-*,readability-*
         #-checks=*
@@ -142,14 +142,16 @@ if (FUTOIN_WITH_TESTS)
         --
         -I${CMAKE_CURRENT_LIST_DIR}/include/
     )
+    add_test(langtidy langtidy-api)
     
     add_custom_target(
-        clangformat-api ALL
+        clangformat-api
         COMMAND /usr/bin/clang-format-6.0
         -style=file
         -i
         ${ALL_SRC_FILES}
     )
+    add_test(clangformat clangformat-api)
 endif()
 
 #--------------------------------------
