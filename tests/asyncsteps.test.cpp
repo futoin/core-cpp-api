@@ -35,14 +35,14 @@ struct TestSteps : AsyncSteps
 
     void add_step(
             asyncsteps::ExecHandler&& exec_h,
-            asyncsteps::ErrorHandler&& error_h) noexcept override
+            asyncsteps::ErrorHandler&& on_error) noexcept override
     {
         exec_handler_ = std::move(exec_h);
-        error_handler_ = std::move(error_h);
+        on_errorandler_ = std::move(on_error);
     };
-    AsyncSteps& parallel(asyncsteps::ErrorHandler error_h) noexcept override
+    AsyncSteps& parallel(asyncsteps::ErrorHandler on_error) noexcept override
     {
-        error_handler_ = std::move(error_h);
+        on_errorandler_ = std::move(on_error);
         return *this;
     };
     void success() noexcept override {}
@@ -74,7 +74,7 @@ struct TestSteps : AsyncSteps
 
     asyncsteps::NextArgs next_args_;
     asyncsteps::ExecHandler exec_handler_;
-    asyncsteps::ErrorHandler error_handler_;
+    asyncsteps::ErrorHandler on_errorandler_;
     asyncsteps::State state_;
     asyncsteps::LoopState loop_state_;
 };

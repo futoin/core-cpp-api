@@ -284,7 +284,7 @@ namespace futoin {
         virtual void sync(
                 AsyncSteps&,
                 asyncsteps::ExecHandler&& exec_handler,
-                asyncsteps::ErrorHandler&& error_handler) noexcept = 0;
+                asyncsteps::ErrorHandler&& on_errorandler) noexcept = 0;
 
     protected:
         virtual ~ISync() noexcept = 0;
@@ -296,8 +296,10 @@ namespace futoin {
     class AsyncSteps
     {
     public:
+        AsyncSteps(const AsyncSteps&) = delete;
         AsyncSteps& operator=(const AsyncSteps&) = delete;
-        AsyncSteps& operator=(AsyncSteps&&) = delete;
+        AsyncSteps(AsyncSteps&&) = default;
+        AsyncSteps& operator=(AsyncSteps&&) = default;
 
         /**
          * @name Common API
@@ -309,9 +311,9 @@ namespace futoin {
          */
         AsyncSteps& add(
                 asyncsteps::ExecHandler exec_handler,
-                asyncsteps::ErrorHandler error_handler = {}) noexcept
+                asyncsteps::ErrorHandler on_errorandler = {}) noexcept
         {
-            add_step(std::move(exec_handler), std::move(error_handler));
+            add_step(std::move(exec_handler), std::move(on_errorandler));
             return *this;
         }
 
@@ -321,14 +323,14 @@ namespace futoin {
         template<typename... T>
         AsyncSteps& add(
                 std::function<void(AsyncSteps&, T...)>&& exec_handler,
-                asyncsteps::ErrorHandler&& error_handler = {}) noexcept
+                asyncsteps::ErrorHandler&& on_errorandler = {}) noexcept
         {
             add_step(
                     std::move(asyncsteps::ExecHandler(
                             [this, exec_handler](AsyncSteps& asi) {
                                 this->nextargs().call(asi, exec_handler);
                             })),
-                    std::move(error_handler));
+                    std::move(on_errorandler));
             return *this;
         }
 
@@ -338,19 +340,19 @@ namespace futoin {
         template<typename F>
         AsyncSteps& add(
                 const F& functor_handler,
-                asyncsteps::ErrorHandler error_handler = {}) noexcept
+                asyncsteps::ErrorHandler on_errorandler = {}) noexcept
         {
             using FP = typename asyncsteps::StripFunctorClass<F>::type;
             return add(
                     std::move(std::function<FP>(functor_handler)),
-                    std::move(error_handler));
+                    std::move(on_errorandler));
         }
 
         /**
          * @brief Get pseudo-parallelized AsyncSteps/
          */
         virtual AsyncSteps& parallel(
-                asyncsteps::ErrorHandler error_handler = {}) noexcept = 0;
+                asyncsteps::ErrorHandler on_errorandler = {}) noexcept = 0;
 
         /**
          * @brief Reference to associated state object.
@@ -368,9 +370,9 @@ namespace futoin {
         AsyncSteps& sync(
                 ISync& obj,
                 asyncsteps::ExecHandler exec_handler,
-                asyncsteps::ErrorHandler error_handler = {}) noexcept
+                asyncsteps::ErrorHandler on_errorandler = {}) noexcept
         {
-            obj.sync(*this, std::move(exec_handler), std::move(error_handler));
+            obj.sync(*this, std::move(exec_handler), std::move(on_errorandler));
             return *this;
         }
 
@@ -382,7 +384,7 @@ namespace futoin {
         AsyncSteps& sync(
                 ISync& obj,
                 std::function<void(AsyncSteps&, T...)>&& exec_handler,
-                asyncsteps::ErrorHandler&& error_handler = {}) noexcept
+                asyncsteps::ErrorHandler&& on_errorandler = {}) noexcept
         {
             obj.sync(
                     *this,
@@ -390,7 +392,7 @@ namespace futoin {
                             [this, exec_handler](AsyncSteps& asi) {
                                 this->nextargs().call(asi, exec_handler);
                             })),
-                    std::move(error_handler));
+                    std::move(on_errorandler));
             return *this;
         }
 
@@ -402,13 +404,13 @@ namespace futoin {
         AsyncSteps& sync(
                 ISync& obj,
                 const F& functor_handler,
-                asyncsteps::ErrorHandler error_handler = {}) noexcept
+                asyncsteps::ErrorHandler on_errorandler = {}) noexcept
         {
             using FP = typename asyncsteps::StripFunctorClass<F>::type;
             return obj.sync(
                     *this,
                     std::move(std::function<FP>(functor_handler)),
-                    std::move(error_handler));
+                    std::move(on_errorandler));
         }
 
         ///@}
