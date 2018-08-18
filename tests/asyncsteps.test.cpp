@@ -187,10 +187,12 @@ BOOST_AUTO_TEST_CASE(async_repeat) // NOLINT
     BOOST_CHECK_EQUAL(count, 0);
 
     for (int i = max; i > 0; --i) {
+        BOOST_CHECK(ts.loop_state_.cond(ts.loop_state_));
         ts.exec_handler_(as);
     }
 
     BOOST_CHECK_EQUAL(count, max);
+    BOOST_CHECK(!ts.loop_state_.cond(ts.loop_state_));
 }
 
 BOOST_AUTO_TEST_CASE(async_forEach_vector) // NOLINT
@@ -216,10 +218,12 @@ BOOST_AUTO_TEST_CASE(async_forEach_vector) // NOLINT
             "Some Label");
 
     for (int i = max; i > 0; --i) {
+        BOOST_CHECK(ts.loop_state_.cond(ts.loop_state_));
         ts.exec_handler_(as);
     }
 
     BOOST_CHECK_EQUAL(count, max);
+    BOOST_CHECK(!ts.loop_state_.cond(ts.loop_state_));
 }
 
 BOOST_AUTO_TEST_CASE(async_forEach_array) // NOLINT
@@ -247,10 +251,12 @@ BOOST_AUTO_TEST_CASE(async_forEach_array) // NOLINT
             "Some Label");
 
     for (int i = max; i > 0; --i) {
+        BOOST_CHECK(ts.loop_state_.cond(ts.loop_state_));
         ts.exec_handler_(as);
     }
 
     BOOST_CHECK_EQUAL(count, max);
+    BOOST_CHECK(!ts.loop_state_.cond(ts.loop_state_));
 }
 
 BOOST_AUTO_TEST_CASE(async_forEach_map) // NOLINT
@@ -280,10 +286,12 @@ BOOST_AUTO_TEST_CASE(async_forEach_map) // NOLINT
             "Some Label");
 
     for (int i = max; i > 0; --i) {
+        BOOST_CHECK(ts.loop_state_.cond(ts.loop_state_));
         ts.exec_handler_(as);
     }
 
     BOOST_CHECK_EQUAL(count, max);
+    BOOST_CHECK(!ts.loop_state_.cond(ts.loop_state_));
 }
 
 BOOST_AUTO_TEST_CASE(async_error) // NOLINT
