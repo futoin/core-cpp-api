@@ -93,65 +93,27 @@ if (FUTOIN_WITH_TESTS)
     list(FILTER LINT_SRC_FILES EXCLUDE REGEX reqcpp)
     
     get_target_property(BOOST_INC_DIRS "Boost::boost" INTERFACE_INCLUDE_DIRECTORIES)
-
-    #---
-    add_custom_target(
-        cppcheck #ALL
-        COMMAND /usr/bin/cppcheck
-        --enable=warning,style,performance,portability,information,missingInclude
-        --std=c++11
-        --template="[{severity}][{id}] {message} {callstack} \(On {file}:{line}\)"
-        --verbose
-        --quiet
-        --inline-suppr
-        # --check-config
-        -I ${CMAKE_CURRENT_LIST_DIR}/include
-        ${ALL_SRC_FILES}
-    )
-    
-    add_custom_target(
-        cppcheck-tests #ALL
-        COMMAND /usr/bin/cppcheck
-        --enable=warning,performance,portability,information
-        --std=c++11
-        --template="[{severity}][{id}] {message} {callstack} \(On {file}:{line}\)"
-        --verbose
-        --quiet
-        --inline-suppr
-        # --check-config
-        -I ${BOOST_INC_DIRS}
-        -I ${CMAKE_CURRENT_LIST_DIR}/include
-        -I /usr/include/
-        -I /usr/include/x86_64-linux-gnu/
-        -I /usr/include/x86_64-linux-gnu/c++/6/
-        -I /usr/include/c++/6/
-        -I /usr/include/c++/6/tr1/
-        -I /usr/include/linux/
-        ${CMAKE_CURRENT_LIST_DIR}/tests/
-    )
     
     #---
-    add_custom_target(
-        clangtidy-api
+    add_test(
+        NAME clangtidy-api
         COMMAND /usr/bin/clang-tidy-6.0
         -checks=bugprone-*,cert-*,clang-analyzer-*,clang-analyzer-*,llvm-*,misc-*,modernize-*,performance-*,readability-*
-        #-checks=*
-        #-fix
+        -warnings-as-errors=*
+        -quiet
         -format-style=file
         ${LINT_SRC_FILES}
         --
         -I${CMAKE_CURRENT_LIST_DIR}/include/
     )
-    add_test(langtidy langtidy-api)
     
-    add_custom_target(
-        clangformat-api
+    add_test(
+        NAME clangformat-api
         COMMAND /usr/bin/clang-format-6.0
         -style=file
         -i
         ${ALL_SRC_FILES}
     )
-    add_test(clangformat clangformat-api)
 endif()
 
 #--------------------------------------
