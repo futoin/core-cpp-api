@@ -95,8 +95,8 @@ if (FUTOIN_WITH_TESTS)
     get_target_property(BOOST_INC_DIRS "Boost::boost" INTERFACE_INCLUDE_DIRECTORIES)
     
     #---
-    add_test(
-        NAME clangtidy-api
+    add_custom_target(
+        clangtidy-api ALL
         COMMAND /usr/bin/clang-tidy-6.0
         -checks=bugprone-*,cert-*,clang-analyzer-*,clang-analyzer-*,llvm-*,misc-*,modernize-*,performance-*,readability-*
         -warnings-as-errors=*
@@ -107,8 +107,8 @@ if (FUTOIN_WITH_TESTS)
         -I${CMAKE_CURRENT_LIST_DIR}/include/
     )
     
-    add_test(
-        NAME clangformat-api
+    add_custom_target(
+        clangformat-api ALL
         COMMAND /usr/bin/clang-format-6.0
         -style=file
         -i

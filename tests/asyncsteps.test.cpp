@@ -71,6 +71,10 @@ struct TestSteps : AsyncSteps
             this_ls.handler(this_ls, asi);
         };
     }
+    std::unique_ptr<AsyncSteps> newInstance() noexcept override
+    {
+        return std::unique_ptr<AsyncSteps>(new TestSteps());
+    };
 
     asyncsteps::NextArgs next_args_;
     asyncsteps::ExecHandler exec_handler_;

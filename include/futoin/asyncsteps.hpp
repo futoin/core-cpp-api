@@ -29,6 +29,7 @@
 #include <chrono>
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <type_traits>
 #include <typeinfo>
 #include <unordered_map>
@@ -300,6 +301,7 @@ namespace futoin {
         AsyncSteps& operator=(const AsyncSteps&) = delete;
         AsyncSteps(AsyncSteps&&) = default;
         AsyncSteps& operator=(AsyncSteps&&) = default;
+        virtual ~AsyncSteps() noexcept = 0;
 
         /**
          * @name Common API
@@ -412,6 +414,11 @@ namespace futoin {
                     std::move(std::function<FP>(functor_handler)),
                     std::move(on_errorandler));
         }
+
+        /**
+         * @brief Create a new instance for standalone execution
+         */
+        virtual std::unique_ptr<AsyncSteps> newInstance() noexcept = 0;
 
         ///@}
 
@@ -599,7 +606,6 @@ namespace futoin {
 
     protected:
         AsyncSteps() = default;
-        virtual ~AsyncSteps() noexcept = 0;
 
         virtual void add_step(
                 asyncsteps::ExecHandler&&, asyncsteps::ErrorHandler&&) = 0;
