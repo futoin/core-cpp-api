@@ -45,7 +45,7 @@ struct TestSteps : AsyncSteps
         on_errorandler_ = std::move(on_error);
         return *this;
     };
-    void success() noexcept override {}
+    void handle_success() noexcept override {}
     void handle_error(ErrorCode /*code*/) override {}
 
     ~TestSteps() noexcept override = default;

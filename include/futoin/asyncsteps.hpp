@@ -288,7 +288,7 @@ namespace futoin {
                 asyncsteps::ErrorHandler&& on_errorandler) noexcept = 0;
 
     protected:
-        virtual ~ISync() noexcept = 0;
+        virtual ~ISync() noexcept = default;
     };
 
     /**
@@ -301,7 +301,7 @@ namespace futoin {
         AsyncSteps& operator=(const AsyncSteps&) = delete;
         AsyncSteps(AsyncSteps&&) = default;
         AsyncSteps& operator=(AsyncSteps&&) = default;
-        virtual ~AsyncSteps() noexcept = 0;
+        virtual ~AsyncSteps() noexcept = default;
 
         /**
          * @name Common API
@@ -430,7 +430,10 @@ namespace futoin {
         /**
          * @brief Generic success completion
          */
-        virtual void success() noexcept = 0;
+        void success() noexcept
+        {
+            handle_success();
+        }
 
         /**
          * @brief Completion with result variables
@@ -439,7 +442,7 @@ namespace futoin {
         void success(T&&... args) noexcept
         {
             nextargs().assign(std::forward<T>(args)...);
-            success();
+            handle_success();
         }
 
         /**
@@ -609,6 +612,7 @@ namespace futoin {
 
         virtual void add_step(
                 asyncsteps::ExecHandler&&, asyncsteps::ErrorHandler&&) = 0;
+        virtual void handle_success() = 0;
         virtual void handle_error(ErrorCode) = 0;
         virtual asyncsteps::NextArgs& nextargs() noexcept = 0;
         virtual void loop_logic(asyncsteps::LoopState&&) noexcept = 0;
@@ -630,10 +634,6 @@ namespace futoin {
 
         ///@}
     };
-
-    // Ensure d-tors are available even when declared pure virtual
-    inline AsyncSteps::~AsyncSteps() noexcept = default;
-    inline ISync::~ISync() noexcept = default;
 } // namespace futoin
 
 //---
