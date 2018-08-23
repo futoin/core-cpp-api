@@ -15,7 +15,7 @@
 //   limitations under the License.
 //-----------------------------------------------------------------------------
 //! @file
-//! @brief Neutral native AsyncSteps (FTN8) interface for C++
+//! @brief Neutral native AsyncSteps (FTN12) interface for C++
 //! @sa https://specs.futoin.org/final/preview/ftn12_async_api.html
 //-----------------------------------------------------------------------------
 
