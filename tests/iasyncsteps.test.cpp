@@ -22,7 +22,7 @@
 #include <array>
 #include <vector>
 
-#include <futoin/asyncsteps.hpp>
+#include <futoin/iasyncsteps.hpp>
 
 using namespace futoin;
 

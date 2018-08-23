@@ -19,8 +19,8 @@
 //! @sa https://specs.futoin.org/final/preview/ftn12_async_api.html
 //-----------------------------------------------------------------------------
 
-#ifndef FUTOIN_ASYNCSTEPS_HPP
-#define FUTOIN_ASYNCSTEPS_HPP
+#ifndef FUTOIN_IASYNCSTEPS_HPP
+#define FUTOIN_IASYNCSTEPS_HPP
 //---
 
 #include "details/reqcpp11.hpp"
@@ -35,6 +35,9 @@
 #include <unordered_map>
 //---
 #include "any.hpp"
+#include "details/asyncloop.hpp"
+#include "details/nextargs.hpp"
+#include "details/strip_functor_class.hpp"
 #include "errors.hpp"
 //---
 
@@ -46,234 +49,17 @@ namespace futoin {
      * @brief Details of AsyncSteps interface
      */
     namespace asyncsteps {
-        class LoopState;
+        using namespace details::asyncloop;
+        using namespace details::nextargs;
 
         using GenericCallback = std::function<void(IAsyncSteps&)>;
         using ExecHandler = GenericCallback;
         using ErrorHandler = std::function<void(IAsyncSteps&, ErrorCode)>;
         using CancelCallback = GenericCallback;
-        using LoopLabel = const char*;
-        using LoopHandler = std::function<void(LoopState&, IAsyncSteps&)>;
-        using LoopCondition = std::function<bool(LoopState&)>;
-
-        //---
-        constexpr auto MAX_NEXT_ARGS = 4;
-
-        /**
-         * @brief A special helper to wrap C-strings and objects passed by
-         * pointer.
-         */
-        template<typename T>
-        struct smart_forward
-        {
-            using RT = typename std::remove_reference<T>::type;
-
-            template<bool = false>
-            static T&& it(RT& v)
-            {
-                static_assert(
-                        !std::is_pointer<RT>::value,
-                        "Pointers are not allowed.");
-                return std::move(v);
-            }
-
-            template<bool = false>
-            static T&& it(RT&& v)
-            {
-                static_assert(
-                        !std::is_pointer<RT>::value,
-                        "Pointers are not allowed.");
-                return v;
-            }
-
-            static std::string it(const char* v)
-            {
-                return v;
-            }
-            static std::u16string it(const char16_t* v)
-            {
-                return v;
-            }
-            static std::u32string it(const char32_t* v)
-            {
-                return v;
-            }
-        };
-
-        /**
-         * @internal
-         */
-        struct NextArgs : public std::array<any, MAX_NEXT_ARGS>
-        {
-            struct NoArg
-            {};
-
-            template<
-                    typename A,
-                    typename B = NoArg,
-                    typename C = NoArg,
-                    typename D = NoArg>
-            inline void assign(
-                    A&& a, B&& b = {}, C&& c = {}, D&& d = {}) noexcept
-            {
-                any* p = data();
-                *p = any(smart_forward<A>::it(a));
-                *(++p) = any(smart_forward<B>::it(b));
-                *(++p) = any(smart_forward<C>::it(c));
-                *(++p) = any(smart_forward<D>::it(d));
-            }
-
-            template<typename A>
-            inline void call(
-                    IAsyncSteps& asi,
-                    const std::function<void(IAsyncSteps&, A)>& exec_handler)
-            {
-                any* p = data();
-                exec_handler(
-                        asi,
-                        any_cast<typename std::remove_reference<A>::type&&>(
-                                *p));
-            }
-            template<typename A, typename B>
-            inline void call(
-                    IAsyncSteps& asi,
-                    const std::function<void(IAsyncSteps&, A, B)>& exec_handler)
-            {
-                any* p = data();
-                exec_handler(
-                        asi,
-                        any_cast<typename std::remove_reference<A>::type&&>(*p),
-                        any_cast<typename std::remove_reference<B>::type&&>(
-                                p + 1));
-            }
-            template<typename A, typename B, typename C>
-            inline void
-            call(IAsyncSteps& asi,
-                 const std::function<void(IAsyncSteps&, A, B, C)>& exec_handler)
-            {
-                any* p = data();
-                exec_handler(
-                        asi,
-                        any_cast<typename std::remove_reference<A>::type&&>(*p),
-                        any_cast<typename std::remove_reference<B>::type&&>(
-                                *(p + 1)),
-                        any_cast<typename std::remove_reference<C>::type&&>(
-                                *(p + 2)));
-            }
-            template<typename A, typename B, typename C, typename D>
-            inline void call(
-                    IAsyncSteps& asi,
-                    const std::function<void(IAsyncSteps&, A, B, C, D)>&
-                            exec_handler)
-            {
-                any* p = data();
-                exec_handler(
-                        asi,
-                        any_cast<typename std::remove_reference<A>::type&&>(*p),
-                        any_cast<typename std::remove_reference<B>::type&&>(
-                                *(p + 1)),
-                        any_cast<typename std::remove_reference<C>::type&&>(
-                                *(p + 2)),
-                        any_cast<typename std::remove_reference<D>::type&&>(
-                                *(p + 3)));
-            }
-        };
-
-        //---
-        /**
-         * @internal
-         */
-        template<typename FP>
-        struct StripFunctorClassHelper
-        {};
-
-        template<typename R, typename... A>
-        struct StripFunctorClassHelper<R(A...)>
-        {
-            using type = R(A...);
-        };
-        template<typename R, typename C, typename... A>
-        struct StripFunctorClassHelper<R (C::*)(A...) const>
-        {
-            using type = R(A...);
-        };
-
-        template<typename R, typename C, typename... A>
-        struct StripFunctorClassHelper<R (C::*)(A...)>
-            : public StripFunctorClassHelper<R (C::*)(A...) const>
-        {};
-
-        /**
-         * @internal
-         */
-        template<typename C>
-        struct StripFunctorClass
-            : public StripFunctorClassHelper<decltype(&C::operator())>
-        {};
 
         //---
 
         using State = std::unordered_map<std::string, any>;
-
-        //---
-        struct LoopState
-        {
-            LoopState(
-                    LoopLabel label,
-                    LoopHandler&& handler,
-                    LoopCondition&& cond = {},
-                    any&& data = {}) :
-                i(0),
-                label(label), handler(handler), cond(cond),
-                data(std::forward<any>(data))
-            {}
-
-            LoopState() = default;
-            LoopState(LoopState&&) = default;
-            LoopState& operator=(LoopState&&) = default;
-
-            LoopState(const LoopState&) = delete;
-            LoopState& operator=(const LoopState&) = delete;
-
-            std::size_t i;
-            LoopLabel label;
-            LoopHandler handler;
-            LoopCondition cond;
-            any data;
-        };
-
-        //---
-        class LoopBreak : public Error
-        {
-        public:
-            LoopBreak(LoopLabel label) : Error(errors::LoopBreak), label_(label)
-            {}
-
-            inline LoopLabel label()
-            {
-                return label_;
-            }
-
-        private:
-            LoopLabel label_;
-        };
-
-        //---
-        class LoopContinue : public Error
-        {
-        public:
-            LoopContinue(LoopLabel label) :
-                Error(errors::LoopCont), label_(label)
-            {}
-
-            inline LoopLabel label()
-            {
-                return label_;
-            }
-
-        private:
-            LoopLabel label_;
-        };
     } // namespace asyncsteps
 
     /**
@@ -344,9 +130,9 @@ namespace futoin {
                 const F& functor_handler,
                 asyncsteps::ErrorHandler on_errorandler = {}) noexcept
         {
-            using FP = typename asyncsteps::StripFunctorClass<F>::type;
+            using FP = typename details::StripFunctorClass<F>::type;
             return add(
-                    std::move(std::function<FP>(functor_handler)),
+                    std::function<FP>(functor_handler),
                     std::move(on_errorandler));
         }
 
@@ -408,7 +194,7 @@ namespace futoin {
                 const F& functor_handler,
                 asyncsteps::ErrorHandler on_errorandler = {}) noexcept
         {
-            using FP = typename asyncsteps::StripFunctorClass<F>::type;
+            using FP = typename details::StripFunctorClass<F>::type;
             return obj.sync(
                     *this,
                     std::move(std::function<FP>(functor_handler)),
@@ -637,4 +423,4 @@ namespace futoin {
 } // namespace futoin
 
 //---
-#endif // FUTOIN_ASYNCSTEPS_HPP
+#endif // FUTOIN_IASYNCSTEPS_HPP

@@ -22,7 +22,8 @@
 #define FUTOIN_ALL_HPP
 //---
 
-#include "asyncsteps.hpp"
+#include "iasyncsteps.hpp"
+#include "iasynctool.hpp"
 
 /**
  * @brief Main namespace for FutoIn project

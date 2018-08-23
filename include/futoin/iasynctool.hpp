@@ -19,8 +19,8 @@
 //! @sa https://specs.futoin.org/final/preview/ftn12_async_api.html
 //-----------------------------------------------------------------------------
 
-#ifndef FUTOIN_ASYNCTOOL_HPP
-#define FUTOIN_ASYNCTOOL_HPP
+#ifndef FUTOIN_IASYNCTOOL_HPP
+#define FUTOIN_IASYNCTOOL_HPP
 //---
 #include "details/reqcpp11.hpp"
 //---
@@ -185,4 +185,4 @@ namespace futoin {
 } // namespace futoin
 
 //---
-#endif // FUTOIN_ASYNCTOOL_HPP
+#endif // FUTOIN_IASYNCTOOL_HPP

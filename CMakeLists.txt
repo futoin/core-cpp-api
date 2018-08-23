@@ -74,10 +74,10 @@ if (FUTOIN_WITH_TESTS)
     enable_testing()
 
     #---
-    add_executable(AsyncStepsTest tests/asyncsteps.test.cpp)
-    target_link_libraries(AsyncStepsTest
+    add_executable(IAsyncStepsTest tests/iasyncsteps.test.cpp)
+    target_link_libraries(IAsyncStepsTest
         PRIVATE ${PROJECT_NAME} Boost::unit_test_framework)
-    add_test(AsyncSteps AsyncStepsTest)
+    add_test(AsyncSteps IAsyncStepsTest)
 endif()
 
 #--------------------------------------
