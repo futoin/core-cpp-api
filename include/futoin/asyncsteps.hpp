@@ -15,7 +15,7 @@
 //   limitations under the License.
 //-----------------------------------------------------------------------------
 //! @file
-//! @brief Neutral native AsyncSteps (FTN12) interface for C++
+//! @brief Neutral native IAsyncSteps (FTN12) interface for C++
 //! @sa https://specs.futoin.org/final/preview/ftn12_async_api.html
 //-----------------------------------------------------------------------------
 
@@ -39,7 +39,7 @@
 //---
 
 namespace futoin {
-    class AsyncSteps;
+    class IAsyncSteps;
     class ISync;
 
     /**
@@ -48,12 +48,12 @@ namespace futoin {
     namespace asyncsteps {
         class LoopState;
 
-        using GenericCallback = std::function<void(AsyncSteps&)>;
+        using GenericCallback = std::function<void(IAsyncSteps&)>;
         using ExecHandler = GenericCallback;
-        using ErrorHandler = std::function<void(AsyncSteps&, ErrorCode)>;
+        using ErrorHandler = std::function<void(IAsyncSteps&, ErrorCode)>;
         using CancelCallback = GenericCallback;
         using LoopLabel = const char*;
-        using LoopHandler = std::function<void(LoopState&, AsyncSteps&)>;
+        using LoopHandler = std::function<void(LoopState&, IAsyncSteps&)>;
         using LoopCondition = std::function<bool(LoopState&)>;
 
         //---
@@ -125,8 +125,8 @@ namespace futoin {
 
             template<typename A>
             inline void call(
-                    AsyncSteps& asi,
-                    const std::function<void(AsyncSteps&, A)>& exec_handler)
+                    IAsyncSteps& asi,
+                    const std::function<void(IAsyncSteps&, A)>& exec_handler)
             {
                 any* p = data();
                 exec_handler(
@@ -136,8 +136,8 @@ namespace futoin {
             }
             template<typename A, typename B>
             inline void call(
-                    AsyncSteps& asi,
-                    const std::function<void(AsyncSteps&, A, B)>& exec_handler)
+                    IAsyncSteps& asi,
+                    const std::function<void(IAsyncSteps&, A, B)>& exec_handler)
             {
                 any* p = data();
                 exec_handler(
@@ -148,8 +148,8 @@ namespace futoin {
             }
             template<typename A, typename B, typename C>
             inline void
-            call(AsyncSteps& asi,
-                 const std::function<void(AsyncSteps&, A, B, C)>& exec_handler)
+            call(IAsyncSteps& asi,
+                 const std::function<void(IAsyncSteps&, A, B, C)>& exec_handler)
             {
                 any* p = data();
                 exec_handler(
@@ -162,8 +162,8 @@ namespace futoin {
             }
             template<typename A, typename B, typename C, typename D>
             inline void call(
-                    AsyncSteps& asi,
-                    const std::function<void(AsyncSteps&, A, B, C, D)>&
+                    IAsyncSteps& asi,
+                    const std::function<void(IAsyncSteps&, A, B, C, D)>&
                             exec_handler)
             {
                 any* p = data();
@@ -283,7 +283,7 @@ namespace futoin {
     {
     public:
         virtual void sync(
-                AsyncSteps&,
+                IAsyncSteps&,
                 asyncsteps::ExecHandler&& exec_handler,
                 asyncsteps::ErrorHandler&& on_errorandler) noexcept = 0;
 
@@ -294,14 +294,14 @@ namespace futoin {
     /**
      * @brief Primary AsyncSteps interface
      */
-    class AsyncSteps
+    class IAsyncSteps
     {
     public:
-        AsyncSteps(const AsyncSteps&) = delete;
-        AsyncSteps& operator=(const AsyncSteps&) = delete;
-        AsyncSteps(AsyncSteps&&) = default;
-        AsyncSteps& operator=(AsyncSteps&&) = default;
-        virtual ~AsyncSteps() noexcept = default;
+        IAsyncSteps(const IAsyncSteps&) = delete;
+        IAsyncSteps& operator=(const IAsyncSteps&) = delete;
+        IAsyncSteps(IAsyncSteps&&) = default;
+        IAsyncSteps& operator=(IAsyncSteps&&) = default;
+        virtual ~IAsyncSteps() noexcept = default;
 
         /**
          * @name Common API
@@ -311,7 +311,7 @@ namespace futoin {
         /**
          * @brief Add generic step.
          */
-        AsyncSteps& add(
+        IAsyncSteps& add(
                 asyncsteps::ExecHandler exec_handler,
                 asyncsteps::ErrorHandler on_errorandler = {}) noexcept
         {
@@ -323,13 +323,13 @@ namespace futoin {
          * @brief Add step which accepts required result variables.
          */
         template<typename... T>
-        AsyncSteps& add(
-                std::function<void(AsyncSteps&, T...)>&& exec_handler,
+        IAsyncSteps& add(
+                std::function<void(IAsyncSteps&, T...)>&& exec_handler,
                 asyncsteps::ErrorHandler&& on_errorandler = {}) noexcept
         {
             add_step(
                     std::move(asyncsteps::ExecHandler(
-                            [this, exec_handler](AsyncSteps& asi) {
+                            [this, exec_handler](IAsyncSteps& asi) {
                                 this->nextargs().call(asi, exec_handler);
                             })),
                     std::move(on_errorandler));
@@ -340,7 +340,7 @@ namespace futoin {
          * @brief Add step which accepts required result variables.
          */
         template<typename F>
-        AsyncSteps& add(
+        IAsyncSteps& add(
                 const F& functor_handler,
                 asyncsteps::ErrorHandler on_errorandler = {}) noexcept
         {
@@ -351,9 +351,9 @@ namespace futoin {
         }
 
         /**
-         * @brief Get pseudo-parallelized AsyncSteps/
+         * @brief Get pseudo-parallelized IAsyncSteps/
          */
-        virtual AsyncSteps& parallel(
+        virtual IAsyncSteps& parallel(
                 asyncsteps::ErrorHandler on_errorandler = {}) noexcept = 0;
 
         /**
@@ -364,12 +364,12 @@ namespace futoin {
         /**
          * @brief Copy steps from a model step.
          */
-        virtual AsyncSteps& copyFrom(AsyncSteps& other) noexcept = 0;
+        virtual IAsyncSteps& copyFrom(IAsyncSteps& other) noexcept = 0;
 
         /**
          * @brief Add generic step synchronized against object.
          */
-        AsyncSteps& sync(
+        IAsyncSteps& sync(
                 ISync& obj,
                 asyncsteps::ExecHandler exec_handler,
                 asyncsteps::ErrorHandler on_errorandler = {}) noexcept
@@ -383,15 +383,15 @@ namespace futoin {
          * synchronized against object.
          */
         template<typename... T>
-        AsyncSteps& sync(
+        IAsyncSteps& sync(
                 ISync& obj,
-                std::function<void(AsyncSteps&, T...)>&& exec_handler,
+                std::function<void(IAsyncSteps&, T...)>&& exec_handler,
                 asyncsteps::ErrorHandler&& on_errorandler = {}) noexcept
         {
             obj.sync(
                     *this,
                     std::move(asyncsteps::ExecHandler(
-                            [this, exec_handler](AsyncSteps& asi) {
+                            [this, exec_handler](IAsyncSteps& asi) {
                                 this->nextargs().call(asi, exec_handler);
                             })),
                     std::move(on_errorandler));
@@ -403,7 +403,7 @@ namespace futoin {
          * synchronized against object.
          */
         template<typename F>
-        AsyncSteps& sync(
+        IAsyncSteps& sync(
                 ISync& obj,
                 const F& functor_handler,
                 asyncsteps::ErrorHandler on_errorandler = {}) noexcept
@@ -418,7 +418,7 @@ namespace futoin {
         /**
          * @brief Create a new instance for standalone execution
          */
-        virtual std::unique_ptr<AsyncSteps> newInstance() noexcept = 0;
+        virtual std::unique_ptr<IAsyncSteps> newInstance() noexcept = 0;
 
         ///@}
 
@@ -499,12 +499,12 @@ namespace futoin {
         /**
          * @brief Generic infinite loop
          */
-        AsyncSteps& loop(
+        IAsyncSteps& loop(
                 const asyncsteps::ExecHandler& handler,
                 asyncsteps::LoopLabel label = nullptr)
         {
             loop_logic(asyncsteps::LoopState(
-                    label, [handler](asyncsteps::LoopState&, AsyncSteps& as) {
+                    label, [handler](asyncsteps::LoopState&, IAsyncSteps& as) {
                         handler(as);
                     }));
             return *this;
@@ -513,14 +513,14 @@ namespace futoin {
         /**
          * @brief Loop with iteration limit
          */
-        AsyncSteps& repeat(
+        IAsyncSteps& repeat(
                 std::size_t count,
-                const std::function<void(AsyncSteps&, std::size_t i)>& handler,
+                const std::function<void(IAsyncSteps&, std::size_t i)>& handler,
                 asyncsteps::LoopLabel label = nullptr)
         {
             loop_logic(asyncsteps::LoopState(
                     label,
-                    [handler](asyncsteps::LoopState& ls, AsyncSteps& as) {
+                    [handler](asyncsteps::LoopState& ls, IAsyncSteps& as) {
                         handler(as, ls.i++);
                     },
                     [count](asyncsteps::LoopState& ls) {
@@ -537,7 +537,7 @@ namespace futoin {
                 typename F,
                 typename V = typename C::mapped_type,
                 bool map = true>
-        AsyncSteps& forEach(
+        IAsyncSteps& forEach(
                 C& c, const F& handler, asyncsteps::LoopLabel label = nullptr)
         {
 
@@ -547,7 +547,7 @@ namespace futoin {
 
             loop_logic(asyncsteps::LoopState(
                     label,
-                    [handler](asyncsteps::LoopState& ls, AsyncSteps& as) {
+                    [handler](asyncsteps::LoopState& ls, IAsyncSteps& as) {
                         Iter& iter = any_cast<Iter&>(ls.data);
                         auto& pair = *iter;
                         ++iter; // make sure to increment before handler call
@@ -564,7 +564,7 @@ namespace futoin {
          * @brief Loop over std::vector-like container
          */
         template<typename C, typename F, typename V = decltype(C().back())>
-        AsyncSteps& forEach(
+        IAsyncSteps& forEach(
                 C& c, const F& handler, asyncsteps::LoopLabel label = nullptr)
         {
 
@@ -574,7 +574,7 @@ namespace futoin {
 
             loop_logic(asyncsteps::LoopState(
                     label,
-                    [handler](asyncsteps::LoopState& ls, AsyncSteps& as) {
+                    [handler](asyncsteps::LoopState& ls, IAsyncSteps& as) {
                         Iter& iter = any_cast<Iter&>(ls.data);
                         auto& val = *iter;
                         ++iter; // make sure to increment before handler call
@@ -608,7 +608,7 @@ namespace futoin {
         ///@}
 
     protected:
-        AsyncSteps() = default;
+        IAsyncSteps() = default;
 
         virtual void add_step(
                 asyncsteps::ExecHandler&&, asyncsteps::ErrorHandler&&) = 0;
@@ -623,12 +623,12 @@ namespace futoin {
         ///@{
 
         /**
-         * @brief Start execution of root AsyncSteps object
+         * @brief Start execution of root IAsyncSteps object
          */
         virtual void execute() noexcept = 0;
 
         /**
-         * @brief Cancel execution of root AsyncSteps object
+         * @brief Cancel execution of root IAsyncSteps object
          */
         virtual void cancel() noexcept = 0;
 

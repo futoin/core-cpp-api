@@ -26,7 +26,7 @@
 
 using namespace futoin;
 
-struct TestSteps : AsyncSteps
+struct TestSteps : IAsyncSteps
 {
     asyncsteps::State& state() noexcept override
     {
@@ -40,7 +40,7 @@ struct TestSteps : AsyncSteps
         exec_handler_ = std::move(exec_h);
         on_errorandler_ = std::move(on_error);
     };
-    AsyncSteps& parallel(asyncsteps::ErrorHandler on_error) noexcept override
+    IAsyncSteps& parallel(asyncsteps::ErrorHandler on_error) noexcept override
     {
         on_errorandler_ = std::move(on_error);
         return *this;
@@ -53,7 +53,7 @@ struct TestSteps : AsyncSteps
     {
         return next_args_;
     };
-    AsyncSteps& copyFrom(AsyncSteps& /*asi*/) noexcept override
+    IAsyncSteps& copyFrom(IAsyncSteps& /*asi*/) noexcept override
     {
         return *this;
     }
@@ -67,13 +67,13 @@ struct TestSteps : AsyncSteps
     {
         asyncsteps::LoopState& this_ls = loop_state_;
         this_ls = std::forward<asyncsteps::LoopState>(ls);
-        exec_handler_ = [&this_ls](AsyncSteps& asi) {
+        exec_handler_ = [&this_ls](IAsyncSteps& asi) {
             this_ls.handler(this_ls, asi);
         };
     }
-    std::unique_ptr<AsyncSteps> newInstance() noexcept override
+    std::unique_ptr<IAsyncSteps> newInstance() noexcept override
     {
-        return std::unique_ptr<AsyncSteps>(new TestSteps());
+        return std::unique_ptr<IAsyncSteps>(new TestSteps());
     };
 
     asyncsteps::NextArgs next_args_;
@@ -86,7 +86,7 @@ struct TestSteps : AsyncSteps
 BOOST_AUTO_TEST_CASE(success_with_args) // NOLINT
 {
     TestSteps ts;
-    AsyncSteps& as = ts;
+    IAsyncSteps& as = ts;
 
     as.success(1, 1.0, "str", true);
     as.success(1, 1.0, "str");
@@ -99,25 +99,25 @@ BOOST_AUTO_TEST_CASE(success_with_args) // NOLINT
 BOOST_AUTO_TEST_CASE(add_with_args) // NOLINT
 {
     TestSteps ts;
-    AsyncSteps& as = ts;
+    IAsyncSteps& as = ts;
 
-    as.add([](AsyncSteps&) {});
+    as.add([](IAsyncSteps&) {});
 
-    as.add([](AsyncSteps&) {}, [](AsyncSteps&, ErrorCode) {});
+    as.add([](IAsyncSteps&) {}, [](IAsyncSteps&, ErrorCode) {});
 
-    as.add([](AsyncSteps&, int, double, std::string&&, bool) {});
+    as.add([](IAsyncSteps&, int, double, std::string&&, bool) {});
 
-    as.add([](AsyncSteps&, std::vector<int>&&) {});
+    as.add([](IAsyncSteps&, std::vector<int>&&) {});
 }
 
 BOOST_AUTO_TEST_CASE(exec_handlers) // NOLINT
 {
     TestSteps ts;
-    AsyncSteps& as = ts;
+    IAsyncSteps& as = ts;
 
     int count = 0;
 
-    as.add([&](AsyncSteps&) { ++count; });
+    as.add([&](IAsyncSteps&) { ++count; });
     BOOST_CHECK_EQUAL(count, 0);
 
     ts.exec_handler_(as);
@@ -125,13 +125,13 @@ BOOST_AUTO_TEST_CASE(exec_handlers) // NOLINT
 
     // Complex
     as.success(1, 1.0, "str", true);
-    as.add([&](AsyncSteps&, int, double, std::string&&, bool) { ++count; });
+    as.add([&](IAsyncSteps&, int, double, std::string&&, bool) { ++count; });
     ts.exec_handler_(as);
     BOOST_CHECK_EQUAL(count, 2);
 
     // Small object
     as.success(std::vector<int>({1, 2, 3}));
-    as.add([&](AsyncSteps&, std::vector<int>&& v) {
+    as.add([&](IAsyncSteps&, std::vector<int>&& v) {
         BOOST_CHECK_EQUAL(v[0], 1);
         BOOST_CHECK_EQUAL(v[1], 2);
         BOOST_CHECK_EQUAL(v[2], 3);
@@ -142,7 +142,7 @@ BOOST_AUTO_TEST_CASE(exec_handlers) // NOLINT
 
     // Large object
     as.success(std::array<int, 1024>({1, 2, 3}));
-    as.add([&](AsyncSteps&, std::array<int, 1024>&& v) {
+    as.add([&](IAsyncSteps&, std::array<int, 1024>&& v) {
         BOOST_CHECK_EQUAL(v[0], 1);
         BOOST_CHECK_EQUAL(v[1], 2);
         BOOST_CHECK_EQUAL(v[2], 3);
@@ -155,12 +155,12 @@ BOOST_AUTO_TEST_CASE(exec_handlers) // NOLINT
 BOOST_AUTO_TEST_CASE(async_loop) // NOLINT
 {
     TestSteps ts;
-    AsyncSteps& as = ts;
+    IAsyncSteps& as = ts;
 
     int count = 0;
 
-    as.loop([&](AsyncSteps&) { --count; });
-    as.loop([&](AsyncSteps&) { ++count; }, "Some Label");
+    as.loop([&](IAsyncSteps&) { --count; });
+    as.loop([&](IAsyncSteps&) { ++count; }, "Some Label");
     BOOST_CHECK_EQUAL(count, 0);
 
     const auto max = 100;
@@ -175,15 +175,15 @@ BOOST_AUTO_TEST_CASE(async_loop) // NOLINT
 BOOST_AUTO_TEST_CASE(async_repeat) // NOLINT
 {
     TestSteps ts;
-    AsyncSteps& as = ts;
+    IAsyncSteps& as = ts;
 
     int count = 0;
     const auto max = 100;
 
-    as.repeat(max, [&](AsyncSteps&, std::size_t) { --count; });
+    as.repeat(max, [&](IAsyncSteps&, std::size_t) { --count; });
     as.repeat(
             max,
-            [&](AsyncSteps&, std::size_t i) {
+            [&](IAsyncSteps&, std::size_t i) {
                 BOOST_CHECK_EQUAL(count, i);
                 ++count;
             },
@@ -202,7 +202,7 @@ BOOST_AUTO_TEST_CASE(async_repeat) // NOLINT
 BOOST_AUTO_TEST_CASE(async_forEach_vector) // NOLINT
 {
     TestSteps ts;
-    AsyncSteps& as = ts;
+    IAsyncSteps& as = ts;
 
     int count = 0;
 
@@ -215,7 +215,7 @@ BOOST_AUTO_TEST_CASE(async_forEach_vector) // NOLINT
 
     as.forEach(
             vec,
-            [&](AsyncSteps&, std::size_t i, int&) {
+            [&](IAsyncSteps&, std::size_t i, int&) {
                 BOOST_CHECK_EQUAL(count, i);
                 ++count;
             },
@@ -233,7 +233,7 @@ BOOST_AUTO_TEST_CASE(async_forEach_vector) // NOLINT
 BOOST_AUTO_TEST_CASE(async_forEach_array) // NOLINT
 {
     TestSteps ts;
-    AsyncSteps& as = ts;
+    IAsyncSteps& as = ts;
 
     int count = 0;
 
@@ -248,7 +248,7 @@ BOOST_AUTO_TEST_CASE(async_forEach_array) // NOLINT
 
     as.forEach(
             carr,
-            [&](AsyncSteps&, std::size_t i, int) {
+            [&](IAsyncSteps&, std::size_t i, int) {
                 BOOST_CHECK_EQUAL(count, i);
                 ++count;
             },
@@ -266,7 +266,7 @@ BOOST_AUTO_TEST_CASE(async_forEach_array) // NOLINT
 BOOST_AUTO_TEST_CASE(async_forEach_map) // NOLINT
 {
     TestSteps ts;
-    AsyncSteps& as = ts;
+    IAsyncSteps& as = ts;
 
     int count = 0;
 
@@ -281,7 +281,7 @@ BOOST_AUTO_TEST_CASE(async_forEach_map) // NOLINT
 
     as.forEach(
             map,
-            [&](AsyncSteps&, const std::string& k, const int& v) {
+            [&](IAsyncSteps&, const std::string& k, const int& v) {
                 BOOST_CHECK_EQUAL(k, iter->first);
                 BOOST_CHECK_EQUAL(v, iter->second);
                 ++iter;
@@ -301,7 +301,7 @@ BOOST_AUTO_TEST_CASE(async_forEach_map) // NOLINT
 BOOST_AUTO_TEST_CASE(async_error) // NOLINT
 {
     TestSteps ts;
-    AsyncSteps& as = ts;
+    IAsyncSteps& as = ts;
 
     BOOST_CHECK_THROW(as.error("Some Code"), futoin::Error);
     BOOST_CHECK_THROW(as.error("Some Code", "Some message"), futoin::Error);
@@ -310,7 +310,7 @@ BOOST_AUTO_TEST_CASE(async_error) // NOLINT
 BOOST_AUTO_TEST_CASE(async_loop_control) // NOLINT
 {
     TestSteps ts;
-    AsyncSteps& as = ts;
+    IAsyncSteps& as = ts;
 
     BOOST_CHECK_THROW(as.breakLoop(), asyncsteps::LoopBreak);
 
