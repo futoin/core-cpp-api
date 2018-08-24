@@ -184,6 +184,15 @@ namespace futoin {
         virtual asyncsteps::State& state() noexcept = 0;
 
         /**
+         * @brief Handy helper to access state variables
+         */
+        template<typename T>
+        T& state(const asyncsteps::State::key_type& key)
+        {
+            return any_cast<T&>(state()[key]);
+        }
+
+        /**
          * @brief Copy steps from a model step.
          */
         virtual IAsyncSteps& copyFrom(IAsyncSteps& other) noexcept = 0;
