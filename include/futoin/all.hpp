@@ -22,6 +22,8 @@
 #define FUTOIN_ALL_HPP
 //---
 
+#include "any.hpp"
+#include "errors.hpp"
 #include "iasyncsteps.hpp"
 #include "iasynctool.hpp"
 

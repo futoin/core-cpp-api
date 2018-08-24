@@ -28,21 +28,21 @@ using namespace futoin;
 
 struct TestSteps : IAsyncSteps
 {
+    TestSteps() : exec_handler_(step_.func_), on_error_handler_(step_.on_error_)
+    {}
+
     asyncsteps::State& state() noexcept override
     {
         return state_;
     }
 
-    void add_step(
-            asyncsteps::ExecHandler&& exec_h,
-            asyncsteps::ErrorHandler&& on_error) noexcept override
+    StepBase& add_step() noexcept override
     {
-        exec_handler_ = std::move(exec_h);
-        on_errorandler_ = std::move(on_error);
+        return step_;
     };
-    IAsyncSteps& parallel(asyncsteps::ErrorHandler on_error) noexcept override
+    IAsyncSteps& parallel(ErrorPass on_error = {}) noexcept override
     {
-        on_errorandler_ = std::move(on_error);
+        on_error.move(step_.on_error_, step_.on_error_storage_);
         return *this;
     };
     void handle_success() noexcept override {}
@@ -59,28 +59,38 @@ struct TestSteps : IAsyncSteps
     }
 
     void setTimeout(std::chrono::milliseconds /*to*/) noexcept override {}
-    void setCancel(asyncsteps::CancelCallback /*cb*/) noexcept override {}
+    void setCancel(CancelPass /*on_cancel*/) noexcept override {}
     void waitExternal() noexcept override {}
     void execute() noexcept override {}
     void cancel() noexcept override {}
-    void loop_logic(asyncsteps::LoopState&& ls) noexcept override
+    asyncsteps::LoopState& add_loop() noexcept override
     {
-        asyncsteps::LoopState& this_ls = loop_state_;
-        this_ls = std::forward<asyncsteps::LoopState>(ls);
-        exec_handler_ = [&this_ls](IAsyncSteps& asi) {
-            this_ls.handler(this_ls, asi);
+        exec_handler_ = [&](IAsyncSteps& asi) {
+            loop_state_.handler(loop_state_, asi);
         };
+        return loop_state_;
     }
     std::unique_ptr<IAsyncSteps> newInstance() noexcept override
     {
         return std::unique_ptr<IAsyncSteps>(new TestSteps());
     };
 
+    IAsyncSteps::StepBase step_;
     asyncsteps::NextArgs next_args_;
-    asyncsteps::ExecHandler exec_handler_;
-    asyncsteps::ErrorHandler on_errorandler_;
+    asyncsteps::ExecHandler& exec_handler_;
+    asyncsteps::ErrorHandler& on_error_handler_;
     asyncsteps::State state_;
     asyncsteps::LoopState loop_state_;
+};
+
+struct TestSync : ISync
+{
+    void lock(IAsyncSteps& asi) noexcept override
+    {
+        asi.success();
+    }
+
+    void unlock(IAsyncSteps& /*asi*/) noexcept override {}
 };
 
 BOOST_AUTO_TEST_CASE(success_with_args) // NOLINT
@@ -319,4 +329,16 @@ BOOST_AUTO_TEST_CASE(async_loop_control) // NOLINT
     BOOST_CHECK_THROW(as.continueLoop(), asyncsteps::LoopContinue);
 
     BOOST_CHECK_THROW(as.continueLoop("Some Label"), asyncsteps::LoopContinue);
+}
+
+BOOST_AUTO_TEST_CASE(sync_obj) // NOLINT
+{
+    TestSteps ts;
+    TestSync mtx;
+    IAsyncSteps& as = ts;
+
+    as.sync(mtx, [](IAsyncSteps&) {});
+    as.sync(mtx, [](IAsyncSteps&) {}, [](IAsyncSteps&, ErrorCode) {});
+    as.sync(mtx, [](IAsyncSteps&, int, double, std::string&&, bool) {});
+    as.sync(mtx, [](IAsyncSteps&, std::vector<int>&&) {});
 }

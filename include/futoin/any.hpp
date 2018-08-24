@@ -79,7 +79,8 @@ namespace futoin {
         }
 
         template<class T>
-        explicit any(T&& v) : type_info_(&typeid(T)) // NOLINT
+        // NOLINTNEXTLINE(misc-forwarding-reference-overload)
+        explicit any(T&& v) : type_info_(&typeid(T))
         {
             using U = typename std::remove_cv<
                     typename std::remove_reference<T>::type>::type;
@@ -153,7 +154,8 @@ namespace futoin {
         std::array<void*, 8> data_;
 
         static constexpr const std::type_info* void_info_ = &typeid(void);
-        static void default_control(ControlMode, any&, any&) {} // NOLINT
+        // NOLINTNEXTLINE(readability-named-parameter)
+        static void default_control(ControlMode, any&, any&) {}
 
         template<
                 typename T,
@@ -280,7 +282,8 @@ namespace futoin {
     struct any::Accessor<any, false, false>
     {
         template<typename A, typename B>
-        static inline void set(A&, B&&) // NOLINT
+        // NOLINTNEXTLINE(readability-named-parameter)
+        static inline void set(A&, B&&)
         {
             static_assert(!std::is_same<A, B>::value, "Invalid any in any");
         }

@@ -25,6 +25,7 @@
 //---
 #include "../any.hpp"
 #include "../errors.hpp"
+#include "./functor_pass.hpp"
 //---
 
 namespace futoin {
@@ -35,34 +36,45 @@ namespace futoin {
             struct LoopState;
 
             using LoopLabel = const char*;
-            using LoopHandler = std::function<void(LoopState&, IAsyncSteps&)>;
-            using LoopCondition = std::function<bool(LoopState&)>;
+
+            using LoopHandlerSignature = void(LoopState&, IAsyncSteps&);
+            using LoopHandler = std::function<LoopHandlerSignature>;
+            using LoopHandlerPass = functor_pass::Simple<LoopHandlerSignature>;
+
+            using LoopConditionSignature = bool(LoopState&);
+            using LoopCondition = std::function<LoopConditionSignature>;
+            using LoopConditionPass =
+                    functor_pass::Simple<LoopConditionSignature>;
 
             //---
             struct LoopState
             {
-                LoopState(
-                        LoopLabel label,
-                        LoopHandler&& handler,
-                        LoopCondition&& cond = {},
-                        any&& data = {}) :
-                    i(0),
-                    label(label), handler(handler), cond(cond),
-                    data(std::forward<any>(data))
-                {}
-
                 LoopState() = default;
-                LoopState(LoopState&&) = default;
-                LoopState& operator=(LoopState&&) = default;
+                LoopState(LoopState&&) = delete;
+                LoopState& operator=(LoopState&&) = delete;
 
                 LoopState(const LoopState&) = delete;
                 LoopState& operator=(const LoopState&) = delete;
 
-                std::size_t i;
-                LoopLabel label;
+                void set_handler(LoopHandlerPass func)
+                {
+                    func.move(handler, handler_storage);
+                }
+                void set_cond(LoopConditionPass func)
+                {
+                    func.move(cond, cond_storage);
+                }
+
+                LoopHandlerPass::Storage outer_func_storage;
+                LoopHandlerPass::Storage handler_storage;
+                LoopConditionPass::Storage cond_storage;
+
                 LoopHandler handler;
                 LoopCondition cond;
+
                 any data;
+                std::size_t i;
+                LoopLabel label;
             };
 
             //---
