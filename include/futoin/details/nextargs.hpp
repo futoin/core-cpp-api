@@ -43,22 +43,13 @@ namespace futoin {
             {
                 using RT = typename std::remove_reference<T>::type;
 
-                template<bool = false>
+                template<typename = void>
                 static T&& it(RT& v)
                 {
                     static_assert(
                             !std::is_pointer<RT>::value,
                             "Pointers are not allowed.");
                     return std::move(v);
-                }
-
-                template<bool = false>
-                static T&& it(RT&& v)
-                {
-                    static_assert(
-                            !std::is_pointer<RT>::value,
-                            "Pointers are not allowed.");
-                    return v;
                 }
 
                 static std::string it(const char* v)
