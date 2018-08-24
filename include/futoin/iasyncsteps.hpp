@@ -116,7 +116,7 @@ namespace futoin {
          */
         IAsyncSteps& add(ExecPass func, ErrorPass on_error = {}) noexcept
         {
-            StepBase& step = add_step();
+            StepData& step = add_step();
             func.move(step.func_, step.func_storage_);
             on_error.move(step.on_error_, step.on_error_storage_);
             return *this;
@@ -130,7 +130,7 @@ namespace futoin {
                 details::functor_pass::Simple<void(IAsyncSteps&, T...)> func,
                 ErrorPass on_error = {}) noexcept
         {
-            StepBase& step = add_step();
+            StepData& step = add_step();
 
             // 1. Create holder for actual callback with all parameters
             using OrigFunction = std::function<void(IAsyncSteps&, T...)>;
@@ -194,7 +194,7 @@ namespace futoin {
         IAsyncSteps& sync(
                 ISync& obj, ExecPass func, ErrorPass on_error = {}) noexcept
         {
-            StepBase& step = add_step();
+            StepData& step = add_step();
 
             struct SyncFunc
             {
@@ -233,7 +233,7 @@ namespace futoin {
                 details::functor_pass::Simple<void(IAsyncSteps&, T...)> func,
                 ErrorPass on_error = {}) noexcept
         {
-            StepBase& step = add_step();
+            StepData& step = add_step();
 
             // 1. Create holder for actual callback with all parameters
             using OrigFunction = std::function<void(IAsyncSteps&, T...)>;
@@ -540,7 +540,7 @@ namespace futoin {
         ///@}
 
     protected:
-        struct StepBase
+        struct StepData
         {
             ExecPass::Storage func_storage_;
             ExecPass::Storage func_extra_storage_;
@@ -553,7 +553,7 @@ namespace futoin {
 
         IAsyncSteps() = default;
 
-        virtual StepBase& add_step() = 0;
+        virtual StepData& add_step() = 0;
         virtual void handle_success() = 0;
         virtual void handle_error(ErrorCode) = 0;
         virtual asyncsteps::NextArgs& nextargs() noexcept = 0;

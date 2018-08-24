@@ -36,7 +36,7 @@ struct TestSteps : IAsyncSteps
         return state_;
     }
 
-    StepBase& add_step() noexcept override
+    StepData& add_step() noexcept override
     {
         return step_;
     };
@@ -75,7 +75,7 @@ struct TestSteps : IAsyncSteps
         return std::unique_ptr<IAsyncSteps>(new TestSteps());
     };
 
-    IAsyncSteps::StepBase step_;
+    IAsyncSteps::StepData step_;
     asyncsteps::NextArgs next_args_;
     asyncsteps::ExecHandler& exec_handler_;
     asyncsteps::ErrorHandler& on_error_handler_;
