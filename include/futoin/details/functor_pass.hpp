@@ -182,6 +182,29 @@ namespace futoin {
                             "Functor type mismatches required signature");
                 }
 
+                // Any functor as reference
+                template<
+                        typename Functor,
+                        typename = is_functor<Functor>,
+                        typename FunctorNoConst =
+                                typename std::remove_const<Functor>::type>
+                Simple(std::reference_wrapper<Functor> f) :
+                    ptr_(&const_cast<FunctorNoConst&>(f.get())),
+                    move_cb_([](void* ptr,
+                                Function& func,
+                                Storage& /*storage*/) {
+                        auto f = reinterpret_cast<Functor*>(ptr);
+                        func = std::ref(*f);
+                    })
+                {
+                    static_assert(
+                            std::is_same<
+                                    FP,
+                                    typename StripFunctorClass<Functor>::type>::
+                                    value,
+                            "Functor type mismatches required signature");
+                }
+
                 void move(Function& dst, Storage& storage)
                 {
                     move_cb_(ptr_, dst, storage);
