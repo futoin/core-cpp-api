@@ -75,6 +75,11 @@ struct TestSteps : IAsyncSteps
         return std::unique_ptr<IAsyncSteps>(new TestSteps());
     };
 
+    operator bool() const noexcept override
+    {
+        return true;
+    };
+
     IAsyncSteps::StepData step_;
     asyncsteps::NextArgs next_args_;
     asyncsteps::ExecHandler& exec_handler_;

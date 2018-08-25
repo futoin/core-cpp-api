@@ -336,6 +336,19 @@ namespace futoin {
          */
         virtual std::unique_ptr<IAsyncSteps> newInstance() noexcept = 0;
 
+        /**
+         * @brief Check if step is in valid state for usage.
+         */
+        virtual operator bool() const noexcept = 0;
+
+        /**
+         * @brief Check if step is in invalid state for usage.
+         */
+        bool operator!() const noexcept
+        {
+            return !operator bool();
+        }
+
         ///@}
 
         /**
