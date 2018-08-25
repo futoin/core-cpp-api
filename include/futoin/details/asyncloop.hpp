@@ -73,6 +73,7 @@ namespace futoin {
                 LoopCondition cond;
 
                 any data;
+                any container_data;
                 std::size_t i;
                 LoopLabel label;
             };

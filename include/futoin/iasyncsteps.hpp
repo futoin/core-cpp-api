@@ -462,6 +462,7 @@ namespace futoin {
 
         /**
          * @brief Loop over std::map-like container
+         * @note Mind lifetime of the container!
          */
         template<
                 typename C,
@@ -469,10 +470,11 @@ namespace futoin {
                 typename V = typename C::mapped_type,
                 bool map = true>
         IAsyncSteps& forEach(
-                C& c,
+                std::reference_wrapper<C> cr,
                 details::functor_pass::Simple<FP> func,
                 asyncsteps::LoopLabel label = nullptr)
         {
+            auto& c = cr.get();
             auto iter = std::begin(c);
             auto end = std::end(c);
             using Iter = decltype(iter);
@@ -501,13 +503,15 @@ namespace futoin {
 
         /**
          * @brief Loop over std::vector-like container
+         * @note Mind lifetime of the container!
          */
         template<typename C, typename FP, typename V = decltype(C().back())>
         IAsyncSteps& forEach(
-                C& c,
+                std::reference_wrapper<C> cr,
                 details::functor_pass::Simple<FP> func,
                 asyncsteps::LoopLabel label = nullptr)
         {
+            auto& c = cr.get();
             auto iter = std::begin(c);
             auto end = std::end(c);
             using Iter = decltype(iter);
@@ -537,6 +541,7 @@ namespace futoin {
 
         /**
          * @brief Loop over std::vector-like container
+         * @note Mind lifetime of the container!
          */
         template<
                 typename C,
@@ -544,9 +549,111 @@ namespace futoin {
                 typename = decltype(&F::operator()),
                 typename FP = typename details::StripFunctorClass<F>::type>
         IAsyncSteps& forEach(
-                C& c, F func, asyncsteps::LoopLabel label = nullptr)
+                std::reference_wrapper<C> c,
+                F func,
+                asyncsteps::LoopLabel label = nullptr)
         {
             return forEach(c, details::functor_pass::Simple<FP>(func), label);
+        }
+
+        /**
+         * @brief Loop over std::map-like container
+         * @note Lifetime of the container is ensured by move!
+         */
+        template<
+                typename C,
+                typename FP,
+                typename V = typename C::mapped_type,
+                bool map = true>
+        IAsyncSteps& forEach(
+                C&& cm,
+                details::functor_pass::Simple<FP> func,
+                asyncsteps::LoopLabel label = nullptr)
+        {
+            auto& ls = add_loop();
+
+            ls.container_data = std::forward<C>(cm);
+
+            auto& c = any_cast<C&>(ls.container_data);
+            auto iter = std::begin(c);
+            auto end = std::end(c);
+            using Iter = decltype(iter);
+
+            ls.label = label;
+            ls.data = any(std::move(iter));
+
+            std::function<FP> handler;
+            func.move(handler, ls.outer_func_storage);
+
+            ls.set_handler(
+                    [handler](asyncsteps::LoopState& ls, IAsyncSteps& as) {
+                        Iter& iter = any_cast<Iter&>(ls.data);
+                        auto& pair = *iter;
+                        ++iter; // make sure to increment before handler call
+                        handler(as, pair.first, pair.second);
+                    });
+            ls.set_cond([end](asyncsteps::LoopState& ls) {
+                return any_cast<Iter&>(ls.data) != end;
+            });
+
+            return *this;
+        }
+
+        /**
+         * @brief Loop over std::vector-like container
+         * @note Lifetime of the container is ensured by move!
+         */
+        template<typename C, typename FP, typename V = decltype(C().back())>
+        IAsyncSteps& forEach(
+                C&& cm,
+                details::functor_pass::Simple<FP> func,
+                asyncsteps::LoopLabel label = nullptr)
+        {
+            auto& ls = add_loop();
+
+            ls.container_data = std::forward<C>(cm);
+
+            auto& c = any_cast<C&>(ls.container_data);
+            auto iter = std::begin(c);
+            auto end = std::end(c);
+            using Iter = decltype(iter);
+
+            ls.label = label;
+            ls.i = 0;
+            ls.data = any(std::move(iter));
+
+            std::function<FP> handler;
+            func.move(handler, ls.outer_func_storage);
+
+            ls.set_handler(
+                    [handler](asyncsteps::LoopState& ls, IAsyncSteps& as) {
+                        Iter& iter = any_cast<Iter&>(ls.data);
+                        auto& val = *iter;
+                        ++iter; // make sure to increment before handler call
+                        handler(as, ls.i++, val);
+                    });
+            ls.set_cond([end](asyncsteps::LoopState& ls) {
+                return any_cast<Iter&>(ls.data) != end;
+            });
+
+            return *this;
+        }
+
+        /**
+         * @brief Loop over std::vector-like container
+         * @note Lifetime of the container is ensured by copy!
+         */
+        template<
+                typename C,
+                typename F,
+                typename = decltype(&F::operator()),
+                typename FP = typename details::StripFunctorClass<F>::type>
+        IAsyncSteps& forEach(C c, F func, asyncsteps::LoopLabel label = nullptr)
+        {
+            return forEach(
+                    std::move(c),
+                    details::functor_pass::Simple<FP>(func),
+                    label);
         }
 
         /**
