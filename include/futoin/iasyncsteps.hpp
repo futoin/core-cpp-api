@@ -55,14 +55,12 @@ namespace futoin {
         using namespace details::asyncloop;
         using namespace details::nextargs;
 
-        using GenericCallbackSignature = void(IAsyncSteps&);
-        using GenericCallback = std::function<GenericCallbackSignature>;
-        using ExecHandlerSignature = GenericCallbackSignature;
-        using ExecHandler = GenericCallback;
+        using ExecHandlerSignature = void(IAsyncSteps&);
+        using ExecHandler = std::function<ExecHandlerSignature>;
         using ErrorHandlerSignature = void(IAsyncSteps&, ErrorCode);
         using ErrorHandler = std::function<ErrorHandlerSignature>;
-        using CancelCallbackSignature = GenericCallbackSignature;
-        using CancelCallback = GenericCallback;
+        using CancelCallbackSignature = void(IAsyncSteps&) /*noexcept*/;
+        using CancelCallback = std::function<void(IAsyncSteps&) noexcept>;
 
         //---
         using StateMap = std::unordered_map<
@@ -76,6 +74,8 @@ namespace futoin {
         {
             using key_type = StateMap::key_type;
             using mapped_type = StateMap::mapped_type;
+            using CatchTrace =
+                    std::function<void(const std::exception&) noexcept>;
 
             inline mapped_type& operator[](const key_type& key) noexcept
             {
@@ -90,6 +90,7 @@ namespace futoin {
             StateMap dynamic_items;
             ErrorMessage error_info;
             LoopLabel error_loop_label{nullptr};
+            CatchTrace catch_trace{[](const std::exception& /*e*/) noexcept {}};
         };
     } // namespace asyncsteps
 
