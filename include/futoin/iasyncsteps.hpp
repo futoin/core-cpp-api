@@ -65,13 +65,32 @@ namespace futoin {
         using CancelCallback = GenericCallback;
 
         //---
-
-        using State = std::unordered_map<
+        using StateMap = std::unordered_map<
                 std::string,
                 any,
                 std::unordered_map<std::string, any>::hasher,
                 std::unordered_map<std::string, any>::key_equal,
                 boost::pool_allocator<any>>;
+
+        struct State
+        {
+            using key_type = StateMap::key_type;
+            using mapped_type = StateMap::mapped_type;
+
+            inline mapped_type& operator[](const key_type& key) noexcept
+            {
+                return dynamic_items[key];
+            }
+
+            inline mapped_type& operator[](key_type&& key) noexcept
+            {
+                return dynamic_items[std::forward<key_type>(key)];
+            }
+
+            StateMap dynamic_items;
+            ErrorMessage error_info;
+            LoopLabel error_loop_label{nullptr};
+        };
     } // namespace asyncsteps
 
     /**
@@ -344,8 +363,9 @@ namespace futoin {
         /**
          * @brief Step abort with specified error
          */
-        [[noreturn]] void error(ErrorCode error, ErrorMessage error_info = {}) {
-            state()["error_info"] = any(std::move(error_info));
+        [[noreturn]] void error(
+                ErrorCode error, ErrorMessage&& error_info = {}) {
+            state().error_info = std::move(error_info);
             handle_error(error);
             throw Error(error);
         }
@@ -534,6 +554,7 @@ namespace futoin {
         [[noreturn]] inline void breakLoop(
                 asyncsteps::LoopLabel label = nullptr)
         {
+            state().error_loop_label = label;
             throw asyncsteps::LoopBreak(label);
         }
 
@@ -543,6 +564,7 @@ namespace futoin {
         [[noreturn]] inline void continueLoop(
                 asyncsteps::LoopLabel label = nullptr)
         {
+            state().error_loop_label = label;
             throw asyncsteps::LoopContinue(label);
         }
 
