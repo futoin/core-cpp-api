@@ -37,9 +37,9 @@ namespace futoin {
     {
     public:
         using CallbackSignature = void();
-        using Callback = std::function<CallbackSignature>;
         using CallbackPass = details::functor_pass::
                 Simple<CallbackSignature, sizeof(std::ptrdiff_t) * 2>;
+        using Callback = CallbackPass::Function;
         using HandleCookie = std::ptrdiff_t;
 
     protected:

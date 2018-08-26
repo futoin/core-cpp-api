@@ -74,13 +74,15 @@ namespace futoin {
              */
             template<
                     typename FP,
-                    size_t S = sizeof(std::ptrdiff_t) * 4,
+                    size_t FunctorSize = sizeof(std::ptrdiff_t) * 4,
+                    template<typename> class FunctionType = std::function,
                     size_t Align = DEFAULT_ALIGN>
             class Simple
             {
             public:
-                using Function = std::function<FP>;
-                using Storage = StorageBase<S, Align>;
+                using FunctionSignature = FP;
+                using Function = FunctionType<FP>;
+                using Storage = StorageBase<FunctorSize, Align>;
 
                 Simple(const Simple&) noexcept = default;
                 Simple& operator=(const Simple&) noexcept = default;
@@ -131,9 +133,9 @@ namespace futoin {
                 // Any functor for move
                 template<
                         typename Functor,
-                        typename = decltype(
-                                std::function<FP>(std::ref(*(Functor*) nullptr))
-                                        .target_type())>
+                        typename =
+                                decltype(Function(std::ref(*(Functor*) nullptr))
+                                                 .target_type())>
                 // NOLINTNEXTLINE(misc-forwarding-reference-overload)
                 Simple(Functor&& f) :
                     ptr_(&f),
@@ -163,9 +165,9 @@ namespace futoin {
                 // Any functor for copy
                 template<
                         typename Functor,
-                        typename = decltype(
-                                std::function<FP>(std::ref(*(Functor*) nullptr))
-                                        .target_type()),
+                        typename =
+                                decltype(Function(std::ref(*(Functor*) nullptr))
+                                                 .target_type()),
                         typename FunctorNoConst =
                                 typename std::remove_const<Functor>::type>
                 Simple(Functor& f) :
@@ -197,9 +199,9 @@ namespace futoin {
                 // Any functor as reference
                 template<
                         typename Functor,
-                        typename = decltype(
-                                std::function<FP>(std::ref(*(Functor*) nullptr))
-                                        .target_type()),
+                        typename =
+                                decltype(Function(std::ref(*(Functor*) nullptr))
+                                                 .target_type()),
                         typename FunctorNoConst =
                                 typename std::remove_const<Functor>::type>
                 Simple(std::reference_wrapper<Functor> f) :

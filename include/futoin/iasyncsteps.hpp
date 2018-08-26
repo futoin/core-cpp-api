@@ -265,7 +265,7 @@ namespace futoin {
             StepData& step = add_step();
 
             // 1. Create holder for actual callback with all parameters
-            using OrigFunction = std::function<void(IAsyncSteps&, T...)>;
+            using OrigFunction = typename decltype(func)::Function;
             auto* orig_fp = new (step.func_extra_.buffer) OrigFunction;
             step.func_extra_.cleanup = [](void* ptr) {
                 reinterpret_cast<OrigFunction*>(ptr)->~OrigFunction();
@@ -459,7 +459,7 @@ namespace futoin {
             ls.label = label;
             ls.i = 0;
 
-            std::function<void(IAsyncSteps&, std::size_t i)> handler;
+            typename decltype(func)::Function handler;
             func.move(handler, ls.outer_func_storage);
 
             ls.set_handler(
@@ -497,7 +497,7 @@ namespace futoin {
             ls.label = label;
             ls.data = any(std::move(iter));
 
-            std::function<FP> handler;
+            typename decltype(func)::Function handler;
             func.move(handler, ls.outer_func_storage);
 
             ls.set_handler(
@@ -535,7 +535,7 @@ namespace futoin {
             ls.i = 0;
             ls.data = any(std::move(iter));
 
-            std::function<FP> handler;
+            typename decltype(func)::Function handler;
             func.move(handler, ls.outer_func_storage);
 
             ls.set_handler(
@@ -595,7 +595,7 @@ namespace futoin {
             ls.label = label;
             ls.data = any(std::move(iter));
 
-            std::function<FP> handler;
+            typename decltype(func)::Function handler;
             func.move(handler, ls.outer_func_storage);
 
             ls.set_handler(
@@ -635,7 +635,7 @@ namespace futoin {
             ls.i = 0;
             ls.data = any(std::move(iter));
 
-            std::function<FP> handler;
+            typename decltype(func)::Function handler;
             func.move(handler, ls.outer_func_storage);
 
             ls.set_handler(
