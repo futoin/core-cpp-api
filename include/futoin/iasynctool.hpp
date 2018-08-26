@@ -27,6 +27,7 @@
 #include <chrono>
 #include <functional>
 //---
+#include "details/functor_pass.hpp"
 
 namespace futoin {
     /**
@@ -35,35 +36,26 @@ namespace futoin {
     class IAsyncTool
     {
     public:
-        using Callback = std::function<void()>;
+        using CallbackSignature = void();
+        using Callback = std::function<CallbackSignature>;
+        using CallbackPass = details::functor_pass::
+                Simple<CallbackSignature, sizeof(std::ptrdiff_t) * 2>;
         using HandleCookie = std::ptrdiff_t;
 
     protected:
         struct HandleAccessor;
         struct InternalHandle
         {
-            InternalHandle(Callback&& cb) : callback(std::forward<Callback>(cb))
-            {}
+            InternalHandle() noexcept = default;
 
-            // InternalHandle(InternalHandle&& other) noexcept = default;
-            // InternalHandle& operator=(InternalHandle&& other) noexcept =
-            // default;
-            InternalHandle(InternalHandle&& other) noexcept :
-                callback(std::move(other.callback))
-            {}
-            InternalHandle& operator=(InternalHandle&& other) noexcept
-            {
-                if (this != &other) {
-                    callback = std::move(other.callback);
-                }
-
-                return *this;
-            }
+            InternalHandle(InternalHandle&& other) noexcept = delete;
+            InternalHandle& operator=(InternalHandle&& other) noexcept = delete;
 
             InternalHandle(const InternalHandle& other) = delete;
             InternalHandle& operator=(const InternalHandle& other) = delete;
 
             Callback callback;
+            CallbackPass::Storage storage;
         };
 
     public:
@@ -122,13 +114,14 @@ namespace futoin {
         /**
          * @brief Schedule immediate callback
          */
-        virtual Handle immediate(Callback&& cb) noexcept = 0;
+        virtual Handle immediate(CallbackPass&& cb) noexcept = 0;
 
         /**
          * @brief Schedule deferred callback
          */
         virtual Handle deferred(
-                std::chrono::milliseconds delay, Callback&& cb) noexcept = 0;
+                std::chrono::milliseconds delay,
+                CallbackPass&& cb) noexcept = 0;
 
         /**
          * @brief Check if the same thread as internal event loop

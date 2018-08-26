@@ -30,13 +30,17 @@ namespace futoin {
 
     namespace details {
         namespace functor_pass {
+            constexpr size_t DEFAULT_ALIGN = sizeof(std::ptrdiff_t);
+
             /**
              * @brief Storage for functors behind std::function
              *        to avoid expensive heap operations.
              */
-            template<size_t S>
+            template<size_t S, size_t Align = DEFAULT_ALIGN>
             struct StorageBase
             {
+                using CleanupCB = void (*)(void* buf);
+
                 StorageBase() = default;
                 StorageBase(const StorageBase&) = delete;
                 StorageBase& operator=(const StorageBase&) = delete;
@@ -45,18 +49,19 @@ namespace futoin {
 
                 ~StorageBase() noexcept
                 {
-                    if (cleanup != nullptr) {
-                        cleanup(&buffer);
-                        cleanup = nullptr;
-                    }
+                    set_cleanup(&default_cleanup);
                 }
 
-                using CleanupCB = void (*)(void* buf);
+                void set_cleanup(CleanupCB cb)
+                {
+                    cleanup(buffer);
+                    cleanup = cb;
+                }
 
-                CleanupCB cleanup{nullptr};
+                static void default_cleanup(void* /*buf*/) {}
 
-                static constexpr auto BUFFER_ALIGN_AS = sizeof(std::ptrdiff_t);
-                alignas(BUFFER_ALIGN_AS) std::uint8_t buffer[S];
+                CleanupCB cleanup{&default_cleanup};
+                alignas(Align) std::uint8_t buffer[S];
             };
 
             /**
@@ -67,12 +72,15 @@ namespace futoin {
              * @note It depend on lifetime of related function parameter value
              * during call.
              */
-            template<typename FP, size_t S = sizeof(std::ptrdiff_t) * 4>
+            template<
+                    typename FP,
+                    size_t S = sizeof(std::ptrdiff_t) * 4,
+                    size_t Align = DEFAULT_ALIGN>
             class Simple
             {
             public:
                 using Function = std::function<FP>;
-                using Storage = StorageBase<S>;
+                using Storage = StorageBase<S, Align>;
 
                 Simple(const Simple&) noexcept = default;
                 Simple& operator=(const Simple&) noexcept = default;
@@ -87,9 +95,10 @@ namespace futoin {
 
                 // Bare Function Pointer
                 Simple(FP* fp) :
-                    ptr_(fp), move_cb_([](void* ptr,
-                                          Function& func,
-                                          Storage& /*storage*/) {
+                    ptr_(reinterpret_cast<void*>(fp)),
+                    move_cb_([](void* ptr,
+                                Function& func,
+                                Storage& /*storage*/) {
                         auto fp = reinterpret_cast<FP*>(ptr);
                         func = fp;
                     })
@@ -117,27 +126,23 @@ namespace futoin {
                     })
                 {}
 
-                template<
-                        typename Functor,
-                        typename = decltype(&Functor::operator()),
-                        typename = typename std::enable_if<std::is_same<
-                                FP,
-                                typename StripFunctorClass<Functor>::type>::
-                                                                   value>::type>
-                struct is_functor
-                {};
+                Simple(Function& f) : Simple(const_cast<const Function&>(f)) {}
 
                 // Any functor for move
-                template<typename Functor, typename = is_functor<Functor>>
+                template<
+                        typename Functor,
+                        typename = decltype(
+                                std::function<FP>(std::ref(*(Functor*) nullptr))
+                                        .target_type())>
                 // NOLINTNEXTLINE(misc-forwarding-reference-overload)
                 Simple(Functor&& f) :
                     ptr_(&f),
                     move_cb_([](void* ptr, Function& func, Storage& storage) {
                         auto f = reinterpret_cast<Functor*>(ptr);
                         auto fs = new (storage.buffer) Functor(std::move(*f));
-                        storage.cleanup = [](void* buf) {
+                        storage.set_cleanup([](void* buf) {
                             reinterpret_cast<Functor*>(buf)->~Functor();
-                        };
+                        });
                         func = std::ref(*fs);
                     })
                 {
@@ -156,15 +161,22 @@ namespace futoin {
                 }
 
                 // Any functor for copy
-                template<typename Functor, typename = is_functor<Functor>>
-                Simple(const Functor& f) :
-                    ptr_(&const_cast<Functor&>(f)),
+                template<
+                        typename Functor,
+                        typename = decltype(
+                                std::function<FP>(std::ref(*(Functor*) nullptr))
+                                        .target_type()),
+                        typename FunctorNoConst =
+                                typename std::remove_const<Functor>::type>
+                Simple(Functor& f) :
+                    ptr_(&const_cast<FunctorNoConst&>(f)),
                     move_cb_([](void* ptr, Function& func, Storage& storage) {
-                        auto f = reinterpret_cast<const Functor*>(ptr);
-                        auto fs = new (storage.buffer) Functor(*f);
-                        storage.cleanup = [](void* buf) {
-                            reinterpret_cast<Functor*>(buf)->~Functor();
-                        };
+                        auto f = reinterpret_cast<Functor*>(ptr);
+                        auto fs = new (storage.buffer) FunctorNoConst(*f);
+                        storage.set_cleanup([](void* buf) {
+                            reinterpret_cast<FunctorNoConst*>(buf)
+                                    ->~FunctorNoConst();
+                        });
                         func = std::ref(*fs);
                     })
                 {
@@ -185,7 +197,9 @@ namespace futoin {
                 // Any functor as reference
                 template<
                         typename Functor,
-                        typename = is_functor<Functor>,
+                        typename = decltype(
+                                std::function<FP>(std::ref(*(Functor*) nullptr))
+                                        .target_type()),
                         typename FunctorNoConst =
                                 typename std::remove_const<Functor>::type>
                 Simple(std::reference_wrapper<Functor> f) :
@@ -196,14 +210,7 @@ namespace futoin {
                         auto f = reinterpret_cast<Functor*>(ptr);
                         func = std::ref(*f);
                     })
-                {
-                    static_assert(
-                            std::is_same<
-                                    FP,
-                                    typename StripFunctorClass<Functor>::type>::
-                                    value,
-                            "Functor type mismatches required signature");
-                }
+                {}
 
                 void move(Function& dst, Storage& storage)
                 {

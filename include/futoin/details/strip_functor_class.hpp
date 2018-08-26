@@ -55,6 +55,11 @@ namespace futoin {
         struct StripFunctorClass
             : public StripFunctorClassHelper<decltype(&C::operator())>
         {};
+
+        template<typename R, typename... A>
+        struct StripFunctorClass<R(A...)>
+            : public StripFunctorClassHelper<R(A...)>
+        {};
     } // namespace details
 } // namespace futoin
 
