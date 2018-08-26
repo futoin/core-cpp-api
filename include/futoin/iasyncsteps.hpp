@@ -64,10 +64,10 @@ namespace futoin {
 
         //---
         using StateMap = std::unordered_map<
-                std::string,
+                futoin::string,
                 any,
-                std::unordered_map<std::string, any>::hasher,
-                std::unordered_map<std::string, any>::key_equal,
+                std::unordered_map<futoin::string, any>::hasher,
+                std::unordered_map<futoin::string, any>::key_equal,
                 boost::pool_allocator<any>>;
 
         struct State

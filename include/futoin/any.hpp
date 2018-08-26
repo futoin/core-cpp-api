@@ -36,15 +36,17 @@
 #else
 #    include <any>
 #endif
+//---
+#include "./string.hpp"
 
 namespace futoin {
 #ifdef FUTOIN_USING_OWN_ANY
-    static inline std::string demangle(const std::type_info& ti)
+    static inline futoin::string demangle(const std::type_info& ti)
     {
 #    ifdef __GNUC__
         int status;
         char* name = abi::__cxa_demangle(ti.name(), nullptr, nullptr, &status);
-        std::string ret{name};
+        futoin::string ret{name};
         free(name);
         return ret;
 #    else

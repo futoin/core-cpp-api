@@ -22,8 +22,8 @@
 #define FUTOIN_ERRORS_HPP
 //---
 
+#include "./string.hpp"
 #include <stdexcept>
-#include <string>
 
 //---
 
@@ -39,7 +39,7 @@ namespace futoin {
     /**
      * @brief FutoIn error message in UTF-8
      */
-    using ErrorMessage = std::string;
+    using ErrorMessage = futoin::string;
 
     /**
      * @brief Canonical FutoIn Error

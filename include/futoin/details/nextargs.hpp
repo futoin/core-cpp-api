@@ -52,15 +52,15 @@ namespace futoin {
                     return std::move(v);
                 }
 
-                static std::string it(const char* v)
+                static futoin::string it(const char* v)
                 {
                     return v;
                 }
-                static std::u16string it(const char16_t* v)
+                static futoin::u16string it(const char16_t* v)
                 {
                     return v;
                 }
-                static std::u32string it(const char32_t* v)
+                static futoin::u32string it(const char32_t* v)
                 {
                     return v;
                 }
