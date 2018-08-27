@@ -65,9 +65,11 @@ struct TestSteps : IAsyncSteps
     void cancel() noexcept override {}
     asyncsteps::LoopState& add_loop() noexcept override
     {
-        exec_handler_ = [&](IAsyncSteps& asi) {
+        ExecPass([&](IAsyncSteps& asi) {
             loop_state_.handler(loop_state_, asi);
-        };
+        })
+                .move(step_.func_, step_.func_storage_);
+
         return loop_state_;
     }
     std::unique_ptr<IAsyncSteps> newInstance() noexcept override

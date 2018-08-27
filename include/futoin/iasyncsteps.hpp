@@ -54,13 +54,37 @@ namespace futoin {
     namespace asyncsteps {
         using namespace details::asyncloop;
         using namespace details::nextargs;
+        namespace functor_pass = details::functor_pass;
 
         using ExecHandlerSignature = void(IAsyncSteps&);
-        using ExecHandler = std::function<ExecHandlerSignature>;
+        using ExecPass = functor_pass::Simple<
+                ExecHandlerSignature,
+                functor_pass::DEFAULT_SIZE,
+                functor_pass::Function>;
+        using ExecHandler = ExecPass::Function;
+
         using ErrorHandlerSignature = void(IAsyncSteps&, ErrorCode);
-        using ErrorHandler = std::function<ErrorHandlerSignature>;
+        using ErrorPass = functor_pass::Simple<
+                ErrorHandlerSignature,
+                functor_pass::DEFAULT_SIZE,
+                functor_pass::Function>;
+        using ErrorHandler = ErrorPass::Function;
+
         using CancelCallbackSignature = void(IAsyncSteps&) /*noexcept*/;
-        using CancelCallback = std::function<void(IAsyncSteps&) noexcept>;
+        using CancelPass = functor_pass::Simple<
+                CancelCallbackSignature,
+                functor_pass::DEFAULT_SIZE,
+                functor_pass::Function>;
+        using CancelCallback = CancelPass::Function;
+
+        template<typename FP>
+        struct ExtendedExecPass
+        {
+            using type = functor_pass::Simple<
+                    FP,
+                    functor_pass::DEFAULT_SIZE,
+                    functor_pass::Function>;
+        };
 
         //---
         using StateMap = std::unordered_map<
@@ -113,12 +137,9 @@ namespace futoin {
     class IAsyncSteps
     {
     public:
-        using ExecPass =
-                details::functor_pass::Simple<asyncsteps::ExecHandlerSignature>;
-        using ErrorPass = details::functor_pass::Simple<
-                asyncsteps::ErrorHandlerSignature>;
-        using CancelPass = details::functor_pass::Simple<
-                asyncsteps::CancelCallbackSignature>;
+        using ExecPass = asyncsteps::ExecPass;
+        using ErrorPass = asyncsteps::ErrorPass;
+        using CancelPass = asyncsteps::CancelPass;
 
         IAsyncSteps(const IAsyncSteps&) = delete;
         IAsyncSteps& operator=(const IAsyncSteps&) = delete;
@@ -145,15 +166,15 @@ namespace futoin {
         /**
          * @brief Add step which accepts required result variables.
          */
-        template<typename... T>
-        IAsyncSteps& add(
-                details::functor_pass::Simple<void(IAsyncSteps&, T...)> func,
-                ErrorPass on_error = {}) noexcept
+        template<typename... T, size_t S, template<typename> class F>
+        IAsyncSteps&
+        add(details::functor_pass::Simple<void(IAsyncSteps&, T...), S, F> func,
+            ErrorPass& on_error) noexcept
         {
             StepData& step = add_step();
 
             // 1. Create holder for actual callback with all parameters
-            using OrigFunction = std::function<void(IAsyncSteps&, T...)>;
+            using OrigFunction = typename decltype(func)::Function;
             auto* orig_fp = new (step.func_extra_.buffer) OrigFunction;
             step.func_extra_.cleanup = [](void* ptr) {
                 reinterpret_cast<OrigFunction*>(ptr)->~OrigFunction();
@@ -188,7 +209,7 @@ namespace futoin {
         IAsyncSteps& add(Functor&& func, ErrorPass on_error = {}) noexcept
         {
             return add(
-                    details::functor_pass::Simple<FP>(
+                    typename asyncsteps::ExtendedExecPass<FP>::type(
                             std::forward<Functor>(func)),
                     on_error);
         }
@@ -247,7 +268,8 @@ namespace futoin {
             func.move(sync_func.orig_func, step.func_storage_);
             on_error.move(sync_func.orig_on_error, step.on_error_storage_);
 
-            step.func_ = std::move(sync_func); // NOTE: heap alloc
+            // step.func_ = std::move(sync_func); // NOTE: heap alloc
+            step.func_ = [](IAsyncSteps& asi) { asi.error("TODO"); };
 
             return *this;
         }
@@ -256,11 +278,11 @@ namespace futoin {
          * @brief Add step which accepts required result variables and
          * synchronized against object.
          */
-        template<typename... T>
-        IAsyncSteps& sync(
-                ISync& obj,
-                details::functor_pass::Simple<void(IAsyncSteps&, T...)> func,
-                ErrorPass on_error = {}) noexcept
+        template<typename... T, size_t S, template<typename> class F>
+        IAsyncSteps&
+        sync(ISync& obj,
+             details::functor_pass::Simple<void(IAsyncSteps&, T...), S, F> func,
+             ErrorPass& on_error) noexcept
         {
             StepData& step = add_step();
 
@@ -304,7 +326,8 @@ namespace futoin {
             on_error.move(sync_func.orig_on_error, step.on_error_storage_);
 
             // 5. Set function
-            step.func_ = std::move(sync_func); // NOTE: heap alloc
+            // step.func_ = std::move(sync_func); // NOTE: heap alloc
+            step.func_ = [](IAsyncSteps& asi) { asi.error("TODO"); };
 
             return *this;
         }
@@ -326,7 +349,7 @@ namespace futoin {
         {
             return sync(
                     obj,
-                    details::functor_pass::Simple<FP>(
+                    typename asyncsteps::ExtendedExecPass<FP>::type(
                             std::forward<Functor>(func)),
                     on_error);
         }
@@ -450,8 +473,10 @@ namespace futoin {
          */
         IAsyncSteps& repeat(
                 std::size_t count,
-                details::functor_pass::Simple<void(IAsyncSteps&, std::size_t i)>
-                        func,
+                details::functor_pass::Simple<
+                        void(IAsyncSteps&, std::size_t i),
+                        asyncsteps::functor_pass::DEFAULT_SIZE,
+                        asyncsteps::functor_pass::Function> func,
                 asyncsteps::LoopLabel label = nullptr)
         {
             auto& ls = add_loop();
@@ -481,10 +506,12 @@ namespace futoin {
                 typename C,
                 typename FP,
                 typename V = typename C::mapped_type,
+                size_t S,
+                template<typename> class ImplF,
                 bool map = true>
         IAsyncSteps& forEach(
                 std::reference_wrapper<C> cr,
-                details::functor_pass::Simple<FP> func,
+                details::functor_pass::Simple<FP, S, ImplF> func,
                 asyncsteps::LoopLabel label = nullptr)
         {
             auto& c = cr.get();
@@ -518,10 +545,15 @@ namespace futoin {
          * @brief Loop over std::vector-like container
          * @note Mind lifetime of the container!
          */
-        template<typename C, typename FP, typename V = decltype(C().back())>
+        template<
+                typename C,
+                typename FP,
+                typename V = decltype(C().back()),
+                size_t S,
+                template<typename> class ImplF>
         IAsyncSteps& forEach(
                 std::reference_wrapper<C> cr,
-                details::functor_pass::Simple<FP> func,
+                details::functor_pass::Simple<FP, S, ImplF> func,
                 asyncsteps::LoopLabel label = nullptr)
         {
             auto& c = cr.get();
@@ -566,7 +598,10 @@ namespace futoin {
                 F func,
                 asyncsteps::LoopLabel label = nullptr)
         {
-            return forEach(c, details::functor_pass::Simple<FP>(func), label);
+            return forEach(
+                    c,
+                    typename asyncsteps::ExtendedExecPass<FP>::type(func),
+                    label);
         }
 
         /**
@@ -577,10 +612,12 @@ namespace futoin {
                 typename C,
                 typename FP,
                 typename V = typename C::mapped_type,
+                size_t S,
+                template<typename> class ImplF,
                 bool map = true>
         IAsyncSteps& forEach(
                 C&& cm,
-                details::functor_pass::Simple<FP> func,
+                details::functor_pass::Simple<FP, S, ImplF> func,
                 asyncsteps::LoopLabel label = nullptr)
         {
             auto& ls = add_loop();
@@ -616,10 +653,15 @@ namespace futoin {
          * @brief Loop over std::vector-like container
          * @note Lifetime of the container is ensured by move!
          */
-        template<typename C, typename FP, typename V = decltype(C().back())>
+        template<
+                typename C,
+                typename FP,
+                typename V = decltype(C().back()),
+                size_t S,
+                template<typename> class ImplF>
         IAsyncSteps& forEach(
                 C&& cm,
-                details::functor_pass::Simple<FP> func,
+                details::functor_pass::Simple<FP, S, ImplF> func,
                 asyncsteps::LoopLabel label = nullptr)
         {
             auto& ls = add_loop();
@@ -665,7 +707,7 @@ namespace futoin {
         {
             return forEach(
                     std::move(c),
-                    details::functor_pass::Simple<FP>(func),
+                    typename asyncsteps::ExtendedExecPass<FP>::type(func),
                     label);
         }
 

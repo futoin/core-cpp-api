@@ -31,6 +31,7 @@ namespace futoin {
     namespace details {
         namespace functor_pass {
             constexpr size_t DEFAULT_ALIGN = sizeof(std::ptrdiff_t);
+            constexpr size_t DEFAULT_SIZE = sizeof(std::ptrdiff_t) * 4;
 
             /**
              * @brief Storage for functors behind std::function
@@ -78,6 +79,30 @@ namespace futoin {
                 using FP = R(A...);
 
                 Function() noexcept = default;
+                Function(const Function&) noexcept = default;
+                Function& operator=(const Function&) noexcept = default;
+
+                Function(Function&& other) noexcept :
+                    impl_(other.impl_), data_(other.data_)
+                {
+                    other.impl_ = nullptr;
+                }
+
+                // NOLINTNEXTLINE(misc-unconventional-assign-operator)
+                void operator=(Function&& other) noexcept
+                {
+                    if (this != &other) {
+                        impl_ = other.impl_;
+                        data_ = other.data_;
+                        other.impl_ = nullptr;
+                    }
+                }
+
+                // NOLINTNEXTLINE(misc-unconventional-assign-operator)
+                void operator=(std::nullptr_t)
+                {
+                    impl_ = nullptr;
+                }
 
                 Function(FP* fp) noexcept
                 {
@@ -89,7 +114,7 @@ namespace futoin {
                 {
                     impl_ = [](void* ptr, A... args) {
                         auto fp = reinterpret_cast<FP*>(ptr);
-                        return fp(args...);
+                        return fp(std::forward<A>(args)...);
                     };
                     data_ = reinterpret_cast<void*>(fp);
                 }
@@ -97,7 +122,10 @@ namespace futoin {
                 template<
                         typename Functor,
                         typename FunctorNoConst =
-                                typename std::remove_const<Functor>::type>
+                                typename std::remove_const<Functor>::type,
+                        typename = decltype(
+                                (R(FunctorNoConst::*)(A...))
+                                & FunctorNoConst::operator())>
                 Function(std::reference_wrapper<Functor> f) noexcept
                 {
                     this->operator=(f);
@@ -112,21 +140,26 @@ namespace futoin {
                 {
                     impl_ = [](void* ptr, A... args) {
                         auto fp = reinterpret_cast<Functor*>(ptr);
-                        return (*fp)(args...);
+                        return (*fp)(std::forward<A>(args)...);
                     };
                     data_ = const_cast<FunctorNoConst*>(&f.get());
                 }
 
                 inline R operator()(A... args) const
                 {
-                    (*impl_)(data_, args...);
+                    return (*impl_)(data_, std::forward<A>(args)...);
                 }
 
-                void target_type() const {}
+                void target_type() const noexcept {}
+
+                operator bool() const noexcept
+                {
+                    return impl_ != nullptr;
+                }
 
             private:
                 using Impl = R(void*, A...);
-                Impl* impl_;
+                Impl* impl_{nullptr};
                 void* data_{nullptr};
             };
 
@@ -140,7 +173,7 @@ namespace futoin {
              */
             template<
                     typename FP,
-                    size_t FunctorSize = sizeof(std::ptrdiff_t) * 4,
+                    size_t FunctorSize = DEFAULT_SIZE,
                     template<typename> class FunctionType = std::function,
                     size_t Align = DEFAULT_ALIGN>
             class Simple

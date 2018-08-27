@@ -38,13 +38,18 @@ namespace futoin {
             using LoopLabel = const char*;
 
             using LoopHandlerSignature = void(LoopState&, IAsyncSteps&);
-            using LoopHandler = std::function<LoopHandlerSignature>;
-            using LoopHandlerPass = functor_pass::Simple<LoopHandlerSignature>;
+            using LoopHandlerPass = functor_pass::Simple<
+                    LoopHandlerSignature,
+                    functor_pass::DEFAULT_SIZE,
+                    functor_pass::Function>;
+            using LoopHandler = LoopHandlerPass::Function;
 
             using LoopConditionSignature = bool(LoopState&);
-            using LoopCondition = std::function<LoopConditionSignature>;
-            using LoopConditionPass =
-                    functor_pass::Simple<LoopConditionSignature>;
+            using LoopConditionPass = functor_pass::Simple<
+                    LoopConditionSignature,
+                    functor_pass::DEFAULT_SIZE,
+                    functor_pass::Function>;
+            using LoopCondition = LoopConditionPass::Function;
 
             //---
             struct LoopState

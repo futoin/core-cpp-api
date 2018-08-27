@@ -89,10 +89,10 @@ namespace futoin {
                     *(++p) = any(smart_forward<D>::it(d));
                 }
 
-                template<typename A>
-                inline void
-                call(IAsyncSteps& asi,
-                     const std::function<void(IAsyncSteps&, A)>& exec_handler)
+                template<typename A, template<typename> class Function>
+                inline void call(
+                        IAsyncSteps& asi,
+                        const Function<void(IAsyncSteps&, A)>& exec_handler)
                 {
                     any* p = data();
                     exec_handler(
@@ -100,11 +100,13 @@ namespace futoin {
                             any_cast<typename std::remove_reference<A>::type&&>(
                                     *p));
                 }
-                template<typename A, typename B>
+                template<
+                        typename A,
+                        typename B,
+                        template<typename> class Function>
                 inline void call(
                         IAsyncSteps& asi,
-                        const std::function<void(IAsyncSteps&, A, B)>&
-                                exec_handler)
+                        const Function<void(IAsyncSteps&, A, B)>& exec_handler)
                 {
                     any* p = data();
                     exec_handler(
@@ -114,11 +116,14 @@ namespace futoin {
                             any_cast<typename std::remove_reference<B>::type&&>(
                                     p + 1));
                 }
-                template<typename A, typename B, typename C>
-                inline void call(
-                        IAsyncSteps& asi,
-                        const std::function<void(IAsyncSteps&, A, B, C)>&
-                                exec_handler)
+                template<
+                        typename A,
+                        typename B,
+                        typename C,
+                        template<typename> class Function>
+                inline void
+                call(IAsyncSteps& asi,
+                     const Function<void(IAsyncSteps&, A, B, C)>& exec_handler)
                 {
                     any* p = data();
                     exec_handler(
@@ -130,10 +135,15 @@ namespace futoin {
                             any_cast<typename std::remove_reference<C>::type&&>(
                                     *(p + 2)));
                 }
-                template<typename A, typename B, typename C, typename D>
+                template<
+                        typename A,
+                        typename B,
+                        typename C,
+                        typename D,
+                        template<typename> class Function>
                 inline void call(
                         IAsyncSteps& asi,
-                        const std::function<void(IAsyncSteps&, A, B, C, D)>&
+                        const Function<void(IAsyncSteps&, A, B, C, D)>&
                                 exec_handler)
                 {
                     any* p = data();
