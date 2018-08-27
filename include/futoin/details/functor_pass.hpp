@@ -65,6 +65,72 @@ namespace futoin {
             };
 
             /**
+             * @brief Lightweight std::function partial replacement
+             *        to be used with StorageBase.
+             */
+            template<typename FP>
+            class Function;
+
+            template<typename R, typename... A>
+            class Function<R(A...)>
+            {
+            public:
+                using FP = R(A...);
+
+                Function() noexcept = default;
+
+                Function(FP* fp) noexcept
+                {
+                    this->operator=(fp);
+                }
+
+                // NOLINTNEXTLINE(misc-unconventional-assign-operator)
+                void operator=(FP* fp)
+                {
+                    impl_ = [](void* ptr, A... args) {
+                        auto fp = reinterpret_cast<FP*>(ptr);
+                        return fp(args...);
+                    };
+                    data_ = reinterpret_cast<void*>(fp);
+                }
+
+                template<
+                        typename Functor,
+                        typename FunctorNoConst =
+                                typename std::remove_const<Functor>::type>
+                Function(std::reference_wrapper<Functor> f) noexcept
+                {
+                    this->operator=(f);
+                }
+
+                template<
+                        typename Functor,
+                        typename FunctorNoConst =
+                                typename std::remove_const<Functor>::type>
+                // NOLINTNEXTLINE(misc-unconventional-assign-operator)
+                void operator=(std::reference_wrapper<Functor> f) noexcept
+                {
+                    impl_ = [](void* ptr, A... args) {
+                        auto fp = reinterpret_cast<Functor*>(ptr);
+                        return (*fp)(args...);
+                    };
+                    data_ = const_cast<FunctorNoConst*>(&f.get());
+                }
+
+                inline R operator()(A... args) const
+                {
+                    (*impl_)(data_, args...);
+                }
+
+                void target_type() const {}
+
+            private:
+                using Impl = R(void*, A...);
+                Impl* impl_;
+                void* data_{nullptr};
+            };
+
+            /**
              * @brief Universal parameter definition to handle different
              *        use cases.
              * @note It must never be used outside of function parameter
