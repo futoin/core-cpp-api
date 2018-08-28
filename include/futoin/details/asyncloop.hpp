@@ -88,7 +88,8 @@ namespace futoin {
             {
             public:
                 LoopBreak(LoopLabel label) :
-                    Error(errors::LoopBreak), label_(label)
+                    Error(errors::LoopBreak),
+                    label_(label)
                 {}
 
                 inline LoopLabel label()
@@ -105,7 +106,8 @@ namespace futoin {
             {
             public:
                 LoopContinue(LoopLabel label) :
-                    Error(errors::LoopCont), label_(label)
+                    Error(errors::LoopCont),
+                    label_(label)
                 {}
 
                 inline LoopLabel label()

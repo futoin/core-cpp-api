@@ -79,7 +79,8 @@ namespace futoin {
                    IAsyncTool& async_tool,
                    HandleCookie cookie) noexcept :
                 internal_(&internal),
-                async_tool_(&async_tool), cookie_(cookie)
+                async_tool_(&async_tool),
+                cookie_(cookie)
             {}
 
             Handle() = default;

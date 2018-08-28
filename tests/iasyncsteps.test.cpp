@@ -46,7 +46,8 @@ struct TestMemPool : IMemPool
 struct TestSteps : IAsyncSteps
 {
     TestSteps() :
-        exec_handler_(step_.func_), on_error_handler_(step_.on_error_),
+        exec_handler_(step_.func_),
+        on_error_handler_(step_.on_error_),
         state_(mem_pool_)
     {}
 

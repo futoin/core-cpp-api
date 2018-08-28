@@ -83,7 +83,8 @@ namespace futoin {
                 Function& operator=(const Function&) noexcept = default;
 
                 Function(Function&& other) noexcept :
-                    impl_(other.impl_), data_(other.data_)
+                    impl_(other.impl_),
+                    data_(other.data_)
                 {
                     other.impl_ = nullptr;
                 }
@@ -208,9 +209,10 @@ namespace futoin {
                 // std::function for move
                 // NOLINTNEXTLINE(misc-forwarding-reference-overload)
                 Simple(Function&& f) :
-                    ptr_(&f), move_cb_([](void* ptr,
-                                          Function& func,
-                                          Storage& /*storage*/) {
+                    ptr_(&f),
+                    move_cb_([](void* ptr,
+                                Function& func,
+                                Storage& /*storage*/) {
                         auto f = reinterpret_cast<Function*>(ptr);
                         func = std::move(*f);
                     })
