@@ -37,6 +37,7 @@
 #    include <any>
 #endif
 //---
+#include "./imempool.hpp"
 #include "./string.hpp"
 
 namespace futoin {
@@ -251,20 +252,27 @@ namespace futoin {
     {
         static inline void set(any& that, T&& v)
         {
-            auto p = new T(std::forward<T>(v));
+            auto& mem_pool = GlobalMemPool::get_default();
+            auto p = mem_pool.allocate(sizeof(T), 1);
+            new (p) T(std::forward<T>(v));
             that.data_[0] = p;
+            that.data_[1] = &mem_pool;
 
             that.control_ = [](ControlMode mode, any& that, any& other) {
                 auto p = reinterpret_cast<T*>(that.data_[0]);
+                auto mem_pool = reinterpret_cast<IMemPool*>(that.data_[1]);
 
                 switch (mode) {
                 case Cleanup:
-                    delete p;
+                    p->~T();
+                    mem_pool->deallocate(p, sizeof(T), 1);
                     that.control_ = default_control;
                     break;
                 case Move:
                     other.data_[0] = p;
+                    other.data_[1] = mem_pool;
                     that.data_[0] = nullptr;
+                    that.data_[1] = nullptr;
                     break;
                 }
             };

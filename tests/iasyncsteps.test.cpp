@@ -23,12 +23,31 @@
 #include <vector>
 
 #include <futoin/iasyncsteps.hpp>
+#include <futoin/imempool.hpp>
 
 using namespace futoin;
 
+struct TestMemPool : IMemPool
+{
+    void* allocate(size_t /*object_size*/, size_t /*count*/) noexcept override
+    {
+        return nullptr;
+    }
+
+    void deallocate(
+            void* /*ptr*/,
+            size_t /*object_size*/,
+            size_t /*count*/) noexcept override
+    {}
+
+    void release_memory() noexcept override {}
+};
+
 struct TestSteps : IAsyncSteps
 {
-    TestSteps() : exec_handler_(step_.func_), on_error_handler_(step_.on_error_)
+    TestSteps() :
+        exec_handler_(step_.func_), on_error_handler_(step_.on_error_),
+        state_(mem_pool_)
     {}
 
     asyncsteps::State& state() noexcept override
@@ -86,6 +105,7 @@ struct TestSteps : IAsyncSteps
     asyncsteps::NextArgs next_args_;
     asyncsteps::ExecHandler& exec_handler_;
     asyncsteps::ErrorHandler& on_error_handler_;
+    TestMemPool mem_pool_;
     asyncsteps::State state_;
     asyncsteps::LoopState loop_state_;
 };

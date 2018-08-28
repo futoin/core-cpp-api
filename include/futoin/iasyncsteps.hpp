@@ -29,12 +29,10 @@
 #include <chrono>
 #include <cstdint>
 #include <functional>
+#include <map>
 #include <memory>
 #include <type_traits>
 #include <typeinfo>
-#include <unordered_map>
-//---
-#include <boost/pool/pool_alloc.hpp>
 //---
 #include "any.hpp"
 #include "details/asyncloop.hpp"
@@ -42,6 +40,7 @@
 #include "details/nextargs.hpp"
 #include "details/strip_functor_class.hpp"
 #include "errors.hpp"
+#include "imempool.hpp"
 //---
 
 namespace futoin {
@@ -87,15 +86,21 @@ namespace futoin {
         };
 
         //---
-        using StateMap = std::unordered_map<
+        using ReferenceStateMap = std::map<futoin::string, any>;
+        using StateMap = std::map<
                 futoin::string,
                 any,
-                std::unordered_map<futoin::string, any>::hasher,
-                std::unordered_map<futoin::string, any>::key_equal,
-                boost::pool_allocator<any>>;
+                ReferenceStateMap::key_compare,
+                IMemPool::Allocator<ReferenceStateMap::value_type>>;
 
-        struct State
+        class State
         {
+        public:
+            explicit State(IMemPool& mem_pool) noexcept :
+                dynamic_items{StateMap::allocator_type(mem_pool)},
+                mem_pool_(&mem_pool)
+            {}
+
             using key_type = StateMap::key_type;
             using mapped_type = StateMap::mapped_type;
             using CatchTrace =
@@ -111,10 +116,18 @@ namespace futoin {
                 return dynamic_items[std::forward<key_type>(key)];
             }
 
+            inline IMemPool& mem_pool() noexcept
+            {
+                return *mem_pool_;
+            }
+
             StateMap dynamic_items;
             ErrorMessage error_info;
             LoopLabel error_loop_label{nullptr};
             CatchTrace catch_trace{[](const std::exception& /*e*/) noexcept {}};
+
+        private:
+            IMemPool* mem_pool_;
         };
     } // namespace asyncsteps
 

@@ -21,27 +21,34 @@
 #ifndef FUTOIN_STRING_HPP
 #define FUTOIN_STRING_HPP
 //---
+#include "imempool.hpp"
 
 #include <string>
 
-/**
- * @brief Main namespace for FutoIn project
- */
 namespace futoin {
     /**
      * @brief Placeholder for heap synchronization optimized version
      */
-    using string = std::string;
+    using string = std::basic_string<
+            char,
+            std::char_traits<char>,
+            IMemPool::Allocator<char>>;
 
     /**
      * @brief Placeholder for heap synchronization optimized version
      */
-    using u16string = std::u16string;
+    using u16string = std::basic_string<
+            char16_t,
+            std::char_traits<char16_t>,
+            IMemPool::Allocator<char>>;
 
     /**
      * @brief Placeholder for heap synchronization optimized version
      */
-    using u32string = std::u32string;
+    using u32string = std::basic_string<
+            char32_t,
+            std::char_traits<char32_t>,
+            IMemPool::Allocator<char>>;
 } // namespace futoin
 
 //---

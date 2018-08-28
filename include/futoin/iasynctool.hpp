@@ -28,6 +28,7 @@
 #include <functional>
 //---
 #include "details/functor_pass.hpp"
+#include "imempool.hpp"
 
 namespace futoin {
     /**
@@ -150,6 +151,11 @@ namespace futoin {
          * @note For integration with external event loop.
          */
         virtual CycleResult iterate() noexcept = 0;
+
+        /**
+         * @brief IMemPool interface
+         */
+        virtual IMemPool& mem_pool() noexcept = 0;
 
     protected:
         struct HandleAccessor
