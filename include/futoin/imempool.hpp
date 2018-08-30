@@ -150,27 +150,34 @@ namespace futoin {
         using size_type = std::size_t;
         using difference_type = std::ptrdiff_t;
 
+        /**
+         * A handy feature to ensure this allocator for particular type
+         * uses optimized(dedicated) version of memory pool.
+         */
+        struct EnsureOptimized
+        {
+            EnsureOptimized() noexcept
+            {
+                ensure_optimized = true;
+            }
+        };
+
         Allocator(const Allocator&) noexcept = default;
         Allocator& operator=(const Allocator&) noexcept = default;
         Allocator(Allocator&&) noexcept = default;
         Allocator& operator=(Allocator&&) noexcept = default;
 
-        Allocator() : Allocator(false) {}
+        Allocator() : mem_pool(&get_default()) {}
 
-        explicit Allocator(IMemPool& mem_pool) noexcept : mem_pool(&mem_pool) {}
-
-        explicit Allocator(bool optimize) :
-            mem_pool(&(
-                    GlobalMemPool::get_default().mem_pool(sizeof(T), optimize)))
-        {}
-
-        explicit Allocator(IMemPool& mem_pool, bool optimize) :
-            mem_pool(&(mem_pool.mem_pool(sizeof(T), optimize)))
+        explicit Allocator(IMemPool& mem_pool) :
+            mem_pool(&(mem_pool.mem_pool(sizeof(T), ensure_optimized)))
         {}
 
         template<typename OT>
         explicit Allocator(const Allocator<OT>& other) noexcept :
-            mem_pool(&(other.mem_pool->mem_pool(sizeof(OT))))
+            mem_pool(&(other.mem_pool->mem_pool(
+                    sizeof(OT),
+                    Allocator<OT>::ensure_optimized || ensure_optimized)))
         {}
 
         pointer allocate(size_type n) noexcept
@@ -198,12 +205,40 @@ namespace futoin {
             return mem_pool != other.mem_pool;
         }
 
+        inline static IMemPool& get_default() noexcept
+        {
+            if (local == nullptr) {
+                local = &GlobalMemPool::get_default().mem_pool(
+                        sizeof(T), ensure_optimized);
+            }
+
+            return *local;
+        }
+
+        inline static void set_thread_default(IMemPool& mem_pool) noexcept
+        {
+            local = &mem_pool;
+        }
+
+        inline static void reset_thread_default() noexcept
+        {
+            local = nullptr;
+        }
+
     private:
         template<typename OT>
         friend class Allocator;
 
         IMemPool* mem_pool;
+
+        static thread_local IMemPool* local;
+        static bool ensure_optimized;
     };
+
+    template<typename T>
+    thread_local IMemPool* IMemPool::Allocator<T>::local{nullptr};
+    template<typename T>
+    bool IMemPool::Allocator<T>::ensure_optimized{false};
 } // namespace futoin
 
 //---
