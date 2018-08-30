@@ -156,7 +156,14 @@ namespace futoin {
         /**
          * @brief IMemPool interface
          */
-        virtual IMemPool& mem_pool() noexcept = 0;
+        virtual IMemPool& mem_pool(
+                std::size_t object_size = 1,
+                bool optimize = false) noexcept = 0;
+
+        /**
+         * @brief Try to release as much of unused allocated memory as possible
+         */
+        virtual void release_memory() noexcept = 0;
 
     protected:
         struct HandleAccessor

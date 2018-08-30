@@ -56,6 +56,16 @@ namespace futoin {
          */
         virtual void release_memory() noexcept = 0;
 
+        /**
+         * @brief Get IMemPool instance more tailored to specific object_size
+         */
+        virtual IMemPool& mem_pool(
+                std::size_t /*object_size*/ = 1,
+                bool /*optimize*/ = false) noexcept
+        {
+            return *this;
+        }
+
         template<typename T>
         class Allocator;
     };
@@ -97,21 +107,31 @@ namespace futoin {
             return *local;
         }
 
+        inline static IMemPool& get_common() noexcept
+        {
+            return common;
+        }
+
         inline static void set_thread_default(IMemPool& mem_pool) noexcept
         {
             local = &mem_pool;
         }
 
+        inline static void reset_thread_default() noexcept
+        {
+            local = &common;
+        }
+
     private:
-        static PassthroughMemPool global;
+        static PassthroughMemPool common;
         static thread_local IMemPool* local;
     };
 
     template<bool B>
-    PassthroughMemPool GlobalMemPoolT<B>::global;
+    PassthroughMemPool GlobalMemPoolT<B>::common;
     template<bool B>
     thread_local IMemPool* GlobalMemPoolT<B>::local =
-            &GlobalMemPoolT<B>::global;
+            &GlobalMemPoolT<B>::common;
 
     using GlobalMemPool = GlobalMemPoolT<true>;
 
@@ -130,17 +150,27 @@ namespace futoin {
         using size_type = std::size_t;
         using difference_type = std::ptrdiff_t;
 
-        explicit Allocator(IMemPool& mem_pool) noexcept : mem_pool(&mem_pool) {}
         Allocator(const Allocator&) noexcept = default;
         Allocator& operator=(const Allocator&) noexcept = default;
         Allocator(Allocator&&) noexcept = default;
         Allocator& operator=(Allocator&&) noexcept = default;
 
-        Allocator() : mem_pool(&(GlobalMemPool::get_default())) {}
+        Allocator() : Allocator(false) {}
+
+        explicit Allocator(IMemPool& mem_pool) noexcept : mem_pool(&mem_pool) {}
+
+        explicit Allocator(bool optimize) :
+            mem_pool(&(
+                    GlobalMemPool::get_default().mem_pool(sizeof(T), optimize)))
+        {}
+
+        explicit Allocator(IMemPool& mem_pool, bool optimize) :
+            mem_pool(&(mem_pool.mem_pool(sizeof(T), optimize)))
+        {}
 
         template<typename OT>
         explicit Allocator(const Allocator<OT>& other) noexcept :
-            mem_pool(other.mem_pool)
+            mem_pool(&(other.mem_pool->mem_pool(sizeof(OT))))
         {}
 
         pointer allocate(size_type n) noexcept
