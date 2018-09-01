@@ -114,7 +114,7 @@ namespace futoin {
                             any_cast<typename std::remove_reference<A>::type&&>(
                                     *p),
                             any_cast<typename std::remove_reference<B>::type&&>(
-                                    p + 1));
+                                    *(p + 1)));
                 }
                 template<
                         typename A,
