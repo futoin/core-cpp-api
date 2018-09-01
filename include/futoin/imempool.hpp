@@ -180,27 +180,27 @@ namespace futoin {
                     Allocator<OT>::ensure_optimized || ensure_optimized)))
         {}
 
-        pointer allocate(size_type n) noexcept
+        inline pointer allocate(size_type n) noexcept
         {
             return reinterpret_cast<pointer>(mem_pool->allocate(sizeof(T), n));
         }
 
-        pointer allocate(size_type n, const_pointer /*ignore*/) noexcept
+        inline pointer allocate(size_type n, const_pointer /*ignore*/) noexcept
         {
             return reinterpret_cast<pointer>(mem_pool->allocate(sizeof(T), n));
         }
 
-        void deallocate(pointer p, size_type n) noexcept
+        inline void deallocate(pointer p, size_type n) noexcept
         {
             mem_pool->deallocate(p, sizeof(T), n);
         }
 
-        bool operator==(Allocator& other) noexcept
+        inline bool operator==(const Allocator& other) const noexcept
         {
             return mem_pool == other.mem_pool;
         }
 
-        bool operator!=(Allocator& other) noexcept
+        inline bool operator!=(const Allocator& other) const noexcept
         {
             return mem_pool != other.mem_pool;
         }

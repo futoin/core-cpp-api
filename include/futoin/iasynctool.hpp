@@ -100,6 +100,11 @@ namespace futoin {
                 }
             }
 
+            void reset() noexcept
+            {
+                internal_ = nullptr;
+            }
+
             operator bool() const noexcept
             {
                 return (internal_ != nullptr)
