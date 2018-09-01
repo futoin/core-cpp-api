@@ -163,7 +163,7 @@ namespace futoin {
         ISync(ISync&&) = delete;
         ISync& operator=(ISync&&) = delete;
 
-        virtual void lock(IAsyncSteps&) noexcept = 0;
+        virtual void lock(IAsyncSteps&) = 0;
         virtual void unlock(IAsyncSteps&) noexcept = 0;
 
     protected:
