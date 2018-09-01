@@ -49,6 +49,12 @@ namespace futoin {
             char32_t,
             std::char_traits<char32_t>,
             IMemPool::Allocator<char>>;
+
+    template<typename T>
+    inline futoin::string key_from_pointer(T* ptr)
+    {
+        return {reinterpret_cast<char*>(&ptr), sizeof(ptr)};
+    }
 } // namespace futoin
 
 //---

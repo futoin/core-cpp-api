@@ -26,11 +26,13 @@
 #include "details/reqcpp11.hpp"
 //---
 #include <array>
+#include <cassert>
 #include <chrono>
 #include <cstdint>
 #include <functional>
 #include <map>
 #include <memory>
+#include <thread>
 #include <type_traits>
 #include <typeinfo>
 //---
@@ -137,6 +139,30 @@ namespace futoin {
     class ISync
     {
     public:
+        /**
+         * @brief std::mutex replacement for single IAsyncTool cases.
+         */
+        struct NoopOSMutex
+        {
+            void lock() noexcept
+            {
+                assert(thread_id == std::this_thread::get_id());
+            }
+
+            void unlock() noexcept
+            {
+                assert(thread_id == std::this_thread::get_id());
+            }
+
+            const std::thread::id thread_id{std::this_thread::get_id()};
+        };
+
+        ISync() noexcept = default;
+        ISync(const ISync&) = delete;
+        ISync& operator=(const ISync&) = delete;
+        ISync(ISync&&) = delete;
+        ISync& operator=(ISync&&) = delete;
+
         virtual void lock(IAsyncSteps&) noexcept = 0;
         virtual void unlock(IAsyncSteps&) noexcept = 0;
 
@@ -153,6 +179,8 @@ namespace futoin {
         using ExecPass = asyncsteps::ExecPass;
         using ErrorPass = asyncsteps::ErrorPass;
         using CancelPass = asyncsteps::CancelPass;
+
+        using SyncRootID = ptrdiff_t;
 
         IAsyncSteps(const IAsyncSteps&) = delete;
         IAsyncSteps& operator=(const IAsyncSteps&) = delete;
@@ -247,9 +275,29 @@ namespace futoin {
         }
 
         /**
+         * @brief Handy helper to access state variables with default value
+         */
+        template<typename T>
+        T& state(const asyncsteps::State::key_type& key, T&& def_val)
+        {
+            any& val = state()[key];
+
+            if (!val.has_value()) {
+                val = std::forward<T>(def_val);
+            }
+
+            return any_cast<T&>(val);
+        }
+
+        /**
          * @brief Copy steps from a model step.
          */
         virtual IAsyncSteps& copyFrom(IAsyncSteps& other) noexcept = 0;
+
+        /**
+         * @brief Get root step ID for usage in ISync interface
+         */
+        virtual SyncRootID sync_root_id() const = 0;
 
         /**
          * @brief Add generic step synchronized against object.
@@ -261,28 +309,41 @@ namespace futoin {
 
             struct SyncFunc
             {
-                SyncFunc(ISync& obj) : obj(obj) {}
+                struct Data
+                {
+                    Data(ISync& obj) : obj(obj) {}
+                    ISync& obj;
+                    asyncsteps::ExecPass::Storage orig_func_storage_;
+                    asyncsteps::ExecHandler orig_func;
+                    asyncsteps::ErrorHandler orig_on_error;
+                };
 
-                ISync& obj;
-                asyncsteps::ExecHandler orig_func;
-                asyncsteps::ErrorHandler orig_on_error;
+                SyncFunc(ISync& obj) noexcept : data_(new Data(obj)) {}
+
+                SyncFunc(SyncFunc&&) noexcept = default;
+                SyncFunc& operator=(SyncFunc&&) noexcept = default;
+
+                std::unique_ptr<Data> data_;
 
                 void operator()(IAsyncSteps& asi) const
                 {
+                    auto& obj = data_->obj;
                     asi.setCancel([&](IAsyncSteps& asi) { obj.unlock(asi); });
                     asi.add([&](IAsyncSteps& asi) { obj.lock(asi); });
-                    asi.add(orig_func, orig_on_error);
+                    asi.add(data_->orig_func, data_->orig_on_error);
                     asi.add([&](IAsyncSteps& asi) { obj.unlock(asi); });
                 }
             };
 
             SyncFunc sync_func(obj);
 
-            func.move(sync_func.orig_func, step.func_storage_);
-            on_error.move(sync_func.orig_on_error, step.on_error_storage_);
+            func.move(
+                    sync_func.data_->orig_func,
+                    sync_func.data_->orig_func_storage_);
+            on_error.move(
+                    sync_func.data_->orig_on_error, step.on_error_storage_);
 
-            // step.func_ = std::move(sync_func); // NOTE: heap alloc
-            step.func_ = [](IAsyncSteps& asi) { asi.error("TODO"); };
+            ExecPass(std::move(sync_func)).move(step.func_, step.func_storage_);
 
             return *this;
         }
@@ -311,18 +372,26 @@ namespace futoin {
             // 2. Create sync step
             struct SyncFunc
             {
-                SyncFunc(ISync& obj) : obj(obj) {}
+                struct Data
+                {
+                    Data(ISync& obj) : obj(obj) {}
+                    ISync& obj;
+                    asyncsteps::ExecPass::Storage orig_func_storage_;
+                    asyncsteps::ExecHandler orig_func;
+                    asyncsteps::ErrorHandler orig_on_error;
+                };
 
-                ISync& obj;
-                asyncsteps::ExecHandler orig_func;
-                asyncsteps::ErrorHandler orig_on_error;
+                SyncFunc(ISync& obj) : data_(new Data(obj)) {}
+
+                std::unique_ptr<Data> data_;
 
                 void operator()(IAsyncSteps& asi) const
                 {
-                    asi.setCancel([&](IAsyncSteps& asi) { obj.unlock(asi); });
-                    asi.add([&](IAsyncSteps& asi) { obj.lock(asi); });
-                    asi.add(orig_func, orig_on_error);
-                    asi.add([&](IAsyncSteps& asi) { obj.unlock(asi); });
+                    asi.setCancel(
+                            [&](IAsyncSteps& asi) { data_->obj.unlock(asi); });
+                    asi.add([&](IAsyncSteps& asi) { data_->obj.lock(asi); });
+                    asi.add(data_->orig_func, data_->orig_on_error);
+                    asi.add([&](IAsyncSteps& asi) { data_->obj.unlock(asi); });
                 }
             };
 
@@ -332,15 +401,17 @@ namespace futoin {
             auto adapter = [this, orig_fp](IAsyncSteps& asi) {
                 this->nextargs().call(asi, *orig_fp);
             };
-            ExecPass adapter_pass{adapter};
-            adapter_pass.move(sync_func.orig_func, step.func_storage_);
+            ExecPass adapter_pass{std::move(adapter)};
+            adapter_pass.move(
+                    sync_func.data_->orig_func,
+                    sync_func.data_->orig_func_storage_);
 
             // 4. Simple error callback
-            on_error.move(sync_func.orig_on_error, step.on_error_storage_);
+            on_error.move(
+                    sync_func.data_->orig_on_error, step.on_error_storage_);
 
             // 5. Set function
-            // step.func_ = std::move(sync_func); // NOTE: heap alloc
-            step.func_ = [](IAsyncSteps& asi) { asi.error("TODO"); };
+            ExecPass(std::move(sync_func)).move(step.func_, step.func_storage_);
 
             return *this;
         }

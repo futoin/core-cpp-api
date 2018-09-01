@@ -102,6 +102,11 @@ struct TestSteps : IAsyncSteps
         return true;
     };
 
+    SyncRootID sync_root_id() const override
+    {
+        return reinterpret_cast<SyncRootID>(this);
+    }
+
     IAsyncSteps::StepData step_;
     asyncsteps::NextArgs next_args_;
     asyncsteps::ExecHandler& exec_handler_;
