@@ -107,6 +107,7 @@ namespace futoin {
             using mapped_type = StateMap::mapped_type;
             using CatchTrace =
                     std::function<void(const std::exception&) noexcept>;
+            using UnhandledError = std::function<void(ErrorCode) noexcept>;
 
             inline mapped_type& operator[](const key_type& key) noexcept
             {
@@ -127,6 +128,7 @@ namespace futoin {
             ErrorMessage error_info;
             LoopLabel error_loop_label{nullptr};
             CatchTrace catch_trace{[](const std::exception& /*e*/) noexcept {}};
+            UnhandledError unhandled_error;
 
         private:
             IMemPool* mem_pool_;
