@@ -4,6 +4,8 @@
 This is a primary FutoIn library for loose coupling of FutoIn users and
 actual implementations of FutoIn concepts.
 
+**WARNING: WORK IN PROGRESS**
+
 #### Concepts
 
 * [**FTN12: AsyncSteps**](https://futoin.org/docs/asyncsteps/)
