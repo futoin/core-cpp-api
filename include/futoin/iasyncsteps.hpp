@@ -101,7 +101,12 @@ namespace futoin {
             explicit State(IMemPool& mem_pool) noexcept :
                 dynamic_items{StateMap::allocator_type(mem_pool)},
                 mem_pool_(&mem_pool)
-            {}
+            {
+                catch_trace = [&](const std::exception& /*e*/) noexcept
+                {
+                    last_exception = std::current_exception();
+                };
+            }
 
             using key_type = StateMap::key_type;
             using mapped_type = StateMap::mapped_type;
@@ -127,7 +132,8 @@ namespace futoin {
             StateMap dynamic_items;
             ErrorMessage error_info;
             LoopLabel error_loop_label{nullptr};
-            CatchTrace catch_trace{[](const std::exception& /*e*/) noexcept {}};
+            std::exception_ptr last_exception{nullptr};
+            CatchTrace catch_trace;
             UnhandledError unhandled_error;
 
         private:
