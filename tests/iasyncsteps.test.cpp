@@ -107,6 +107,8 @@ struct TestSteps : IAsyncSteps
         return reinterpret_cast<SyncRootID>(this);
     }
 
+    void await_impl(AwaitPass /*cb*/) noexcept override {}
+
     IAsyncSteps::StepData step_;
     asyncsteps::NextArgs next_args_;
     asyncsteps::ExecHandler& exec_handler_;

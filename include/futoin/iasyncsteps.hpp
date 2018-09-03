@@ -30,6 +30,7 @@
 #include <chrono>
 #include <cstdint>
 #include <functional>
+#include <future>
 #include <map>
 #include <memory>
 #include <thread>
@@ -77,6 +78,14 @@ namespace futoin {
                 functor_pass::DEFAULT_SIZE,
                 functor_pass::Function>;
         using CancelCallback = CancelPass::Function;
+
+        using AwaitCallbackSignature =
+                bool(IAsyncSteps&, std::chrono::milliseconds);
+        using AwaitPass = functor_pass::Simple<
+                AwaitCallbackSignature,
+                functor_pass::DEFAULT_SIZE,
+                functor_pass::Function>;
+        using AwaitCallback = AwaitPass::Function;
 
         template<typename FP>
         struct ExtendedExecPass
@@ -135,6 +144,7 @@ namespace futoin {
             std::exception_ptr last_exception{nullptr};
             CatchTrace catch_trace;
             UnhandledError unhandled_error;
+            any promise;
 
         private:
             IMemPool* mem_pool_;
@@ -452,16 +462,22 @@ namespace futoin {
         virtual std::unique_ptr<IAsyncSteps> newInstance() noexcept = 0;
 
         /**
-         * @brief Check if step is in valid state for usage.
+         * @brief Wait for external std::future with no result
          */
-        virtual operator bool() const noexcept = 0;
+        void await(std::future<void>&& future)
+        {
+            using Future = std::future<void>;
+            await_impl(FutureWait<Future>(std::forward<Future>(future)));
+        }
 
         /**
-         * @brief Check if step is in invalid state for usage.
+         * @brief Wait for external std::future with result
          */
-        bool operator!() const noexcept
+        template<typename Result>
+        void await(std::future<Result>&& future)
         {
-            return !operator bool();
+            using Future = std::future<Result>;
+            await_impl(FutureWait<Future>(std::forward<Future>(future)));
         }
 
         ///@}
@@ -533,6 +549,19 @@ namespace futoin {
          * @brief Prevent implicit as.success() behavior of current step.
          */
         virtual void waitExternal() noexcept = 0;
+
+        /**
+         * @brief Check if step is in valid state for usage.
+         */
+        virtual operator bool() const noexcept = 0;
+
+        /**
+         * @brief Check if step is in invalid state for usage.
+         */
+        bool operator!() const noexcept
+        {
+            return !operator bool();
+        }
 
         ///@}
 
@@ -826,6 +855,8 @@ namespace futoin {
         ///@}
 
     protected:
+        using AwaitPass = asyncsteps::AwaitPass;
+
         struct StepData
         {
             ExecPass::Storage func_storage_;
@@ -837,6 +868,55 @@ namespace futoin {
             asyncsteps::ErrorHandler on_error_;
         };
 
+        template<typename Future>
+        struct FutureWait
+        {
+            using Result = decltype(Future().get());
+
+            FutureWait(Future&& future) noexcept :
+                future(std::forward<Future>(future))
+            {}
+
+            FutureWait(FutureWait&& other) noexcept :
+                future(std::move(other.future))
+            {}
+
+            inline bool operator()(
+                    IAsyncSteps& asi, std::chrono::milliseconds delay)
+            {
+                if (future.wait_for(delay) != std::future_status::ready) {
+                    return false;
+                }
+
+                complete::done(future, asi);
+                return true;
+            }
+
+            struct complete_normal
+            {
+                static inline void done(Future& f, IAsyncSteps& asi)
+                {
+                    asi(f.get());
+                }
+            };
+
+            struct complete_void
+            {
+                static inline void done(Future& f, IAsyncSteps& asi)
+                {
+                    f.get();
+                    asi();
+                }
+            };
+
+            using complete = typename std::conditional<
+                    std::is_same<Result, void>::value,
+                    complete_void,
+                    complete_normal>::type;
+
+            Future future;
+        };
+
         IAsyncSteps() = default;
 
         virtual StepData& add_step() = 0;
@@ -844,6 +924,7 @@ namespace futoin {
         virtual void handle_error(ErrorCode) = 0;
         virtual asyncsteps::NextArgs& nextargs() noexcept = 0;
         virtual asyncsteps::LoopState& add_loop() noexcept = 0;
+        virtual void await_impl(AwaitPass) noexcept = 0;
 
         /**
          * @name Control API
@@ -859,6 +940,61 @@ namespace futoin {
          * @brief Cancel execution of root IAsyncSteps object
          */
         virtual void cancel() noexcept = 0;
+
+        /**
+         * @brief Get native future with result variable
+         */
+        template<typename Result>
+        std::future<Result> promise() noexcept
+        {
+            auto& state = this->state();
+            using Promise = std::promise<Result>;
+
+            state.promise = Promise();
+            auto& promise = futoin::any_cast<Promise&>(state.promise);
+
+            state.unhandled_error = [&](ErrorCode err) {
+                auto eptr = std::current_exception();
+
+                if (eptr == nullptr) {
+                    promise.set_exception(std::make_exception_ptr(Error(err)));
+                } else {
+                    promise.set_exception(eptr);
+                }
+            };
+            add([&](IAsyncSteps&, Result&& res) {
+                promise.set_value(std::forward<Result>(res));
+            });
+            execute();
+
+            return promise.get_future();
+        }
+
+        /**
+         * @brief Get native future without result
+         */
+        std::future<void> promise() noexcept
+        {
+            auto& state = this->state();
+            using Promise = std::promise<void>;
+
+            state.promise = Promise();
+            auto& promise = futoin::any_cast<Promise&>(state.promise);
+
+            state.unhandled_error = [&](ErrorCode err) {
+                auto eptr = std::current_exception();
+
+                if (eptr == nullptr) {
+                    promise.set_exception(std::make_exception_ptr(Error(err)));
+                } else {
+                    promise.set_exception(eptr);
+                }
+            };
+            add([&](IAsyncSteps&) { promise.set_value(); });
+            execute();
+
+            return promise.get_future();
+        }
 
         ///@}
     };
