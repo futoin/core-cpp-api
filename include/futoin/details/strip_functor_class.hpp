@@ -15,7 +15,7 @@
 //   limitations under the License.
 //-----------------------------------------------------------------------------
 //! @file
-//! @brief Include all available native API
+//! @brief Helper to determine call signature for functor objects and functions
 //-----------------------------------------------------------------------------
 
 #ifndef FUTOIN_DETAILS_STRIP_FUNCTOR_CLASS_HPP
