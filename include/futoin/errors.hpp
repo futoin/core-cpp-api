@@ -23,6 +23,7 @@
 //---
 
 #include "./string.hpp"
+#include <cstring>
 #include <stdexcept>
 
 //---
@@ -34,7 +35,33 @@ namespace futoin {
      * Unlike traditional integral error codes, FutoIn errors codes are designed
      * to be self-descriptive to be easily transfered over network.
      */
-    using ErrorCode = const char*;
+    using RawErrorCode = const char*;
+
+    /**
+     * @brief RawErrorCode wrapper
+     */
+    struct ErrorCode
+    {
+        ErrorCode(RawErrorCode raw_code) noexcept : raw_code(raw_code) {}
+
+        inline operator RawErrorCode() const noexcept
+        {
+            return raw_code;
+        }
+
+        inline bool operator==(RawErrorCode other_code) const noexcept
+        {
+            return strcmp(raw_code, other_code) == 0;
+        }
+
+        inline bool operator!=(RawErrorCode other_code) const noexcept
+        {
+            return strcmp(raw_code, other_code) != 0;
+        }
+
+    private:
+        RawErrorCode raw_code;
+    };
 
     /**
      * @brief FutoIn error message in UTF-8
@@ -47,7 +74,7 @@ namespace futoin {
     class Error : public std::runtime_error
     {
     public:
-        Error(ErrorCode code) noexcept : runtime_error(code) {}
+        Error(RawErrorCode code) noexcept : runtime_error(code) {}
     };
 
     /**
@@ -59,7 +86,7 @@ namespace futoin {
          *
          * @note Must be generated on Invoker side
          */
-        constexpr ErrorCode ConnectError = "ConnectError";
+        constexpr RawErrorCode ConnectError = "ConnectError";
 
         /**
          * @brief Communication error at any stage after request is sent
@@ -67,91 +94,91 @@ namespace futoin {
          *
          * @note Must be generated on Invoker side
          */
-        constexpr ErrorCode CommError = "CommError";
+        constexpr RawErrorCode CommError = "CommError";
 
         /**
          * @brief Unknown interface requested.
          *
          * @note Must be generated only on Executor side.
          */
-        constexpr ErrorCode UnknownInterface = "UnknownInterface";
+        constexpr RawErrorCode UnknownInterface = "UnknownInterface";
 
         /**
          * @brief Not supported interface version.
          * @note Must be generated only on Executor side
          */
-        constexpr ErrorCode NotSupportedVersion = "NotSupportedVersion";
+        constexpr RawErrorCode NotSupportedVersion = "NotSupportedVersion";
 
         /**
          * @brief In case interface function is not implemented on Executor side
          * @note Must be generated on Executor side
          */
-        constexpr ErrorCode NotImplemented = "NotImplemented";
+        constexpr RawErrorCode NotImplemented = "NotImplemented";
 
         /**
          * @brief Security policy on Executor side does not allow to
          * access interface or specific function.
          * @note Must be generated only on Executor side
          */
-        constexpr ErrorCode Unauthorized = "Unauthorized";
+        constexpr RawErrorCode Unauthorized = "Unauthorized";
 
         /**
          * @brief Unexpected internal error on Executor side, including internal
          * CommError.
          * @note Must be generated only on Executor side
          */
-        constexpr ErrorCode InternalError = "InternalError";
+        constexpr RawErrorCode InternalError = "InternalError";
 
         /**
          * @brief Unexpected internal error on Invoker side, not related to
          * CommError.
          * @note Must be generated only on Invoker side
          */
-        constexpr ErrorCode InvokerError = "InvokerError";
+        constexpr RawErrorCode InvokerError = "InvokerError";
 
         /**
          * @brief Invalid data is passed as FutoIn request.
          * @note Must be generated only on Executor side
          */
-        constexpr ErrorCode InvalidRequest = "InvalidRequest";
+        constexpr RawErrorCode InvalidRequest = "InvalidRequest";
 
         /**
          * @brief Defense system has triggered rejection
          * @note Must be generated on Executor side, but also possible to be
          * triggered on Invoker
          */
-        constexpr ErrorCode DefenseRejected = "DefenseRejected";
+        constexpr RawErrorCode DefenseRejected = "DefenseRejected";
 
         /**
          * @brief Executor requests re-authorization
          * @note Must be generated only on Executor side
          */
-        constexpr ErrorCode PleaseReauth = "PleaseReauth";
+        constexpr RawErrorCode PleaseReauth = "PleaseReauth";
 
         /**
          * @brief 'sec' request section has invalid data or not SecureChannel
          * @note Must be generated only on Executor side
          */
-        constexpr ErrorCode SecurityError = "SecurityError";
+        constexpr RawErrorCode SecurityError = "SecurityError";
 
         /**
          * @brief Timeout occurred in any stage
          * @note Must be used only internally and should never travel in request
          * message
          */
-        constexpr ErrorCode Timeout = "Timeout";
+        constexpr RawErrorCode Timeout = "Timeout";
 
         /**
          * @brief Loop Break called
          * @note Must not be used directly.
          */
-        constexpr ErrorCode LoopBreak = "LoopBreak";
+        constexpr RawErrorCode LoopBreak = "LoopBreak";
 
         /**
          * @brief Loop Continue called
          * @note Must not be used directly.
          */
-        constexpr ErrorCode LoopCont = "LoopCont";
+        constexpr RawErrorCode LoopCont = "LoopCont";
     }; // namespace errors
 } // namespace futoin
 
