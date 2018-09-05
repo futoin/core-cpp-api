@@ -176,7 +176,7 @@ namespace futoin {
         template<typename OT>
         explicit Allocator(const Allocator<OT>& other) noexcept :
             mem_pool(&(other.mem_pool->mem_pool(
-                    sizeof(OT),
+                    sizeof(T),
                     Allocator<OT>::ensure_optimized || ensure_optimized)))
         {}
 
