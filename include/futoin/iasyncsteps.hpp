@@ -80,7 +80,7 @@ namespace futoin {
         using CancelCallback = CancelPass::Function;
 
         using AwaitCallbackSignature =
-                bool(IAsyncSteps&, std::chrono::milliseconds);
+                bool(IAsyncSteps&, std::chrono::milliseconds, bool);
         using AwaitPass = functor_pass::Simple<
                 AwaitCallbackSignature,
                 functor_pass::DEFAULT_SIZE,
@@ -868,6 +868,11 @@ namespace futoin {
             asyncsteps::ErrorHandler on_error_;
         };
 
+        /**
+         * Generic Future wrapping Functor to alloc both
+         * resource consuming polling and suspend approach
+         * in implementation.
+         */
         template<typename Future>
         struct FutureWait
         {
@@ -882,13 +887,18 @@ namespace futoin {
             {}
 
             inline bool operator()(
-                    IAsyncSteps& asi, std::chrono::milliseconds delay)
+                    IAsyncSteps& asi,
+                    std::chrono::milliseconds delay,
+                    bool complete)
             {
                 if (future.wait_for(delay) != std::future_status::ready) {
                     return false;
                 }
 
-                complete::done(future, asi);
+                if (complete) {
+                    complete::done(future, asi);
+                }
+
                 return true;
             }
 
