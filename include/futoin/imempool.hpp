@@ -22,8 +22,6 @@
 #define FUTOIN_IMEMPOOL_HPP
 //---
 #include <cstdint>
-#include <cstdlib>
-#include <cstring>
 
 namespace futoin {
     /**
@@ -160,11 +158,7 @@ namespace futoin {
         {
             EnsureOptimized() noexcept
             {
-                auto res = std::getenv("FUTOIN_USE_MEMPOOL");
-
-                if ((res == nullptr) || (std::strcmp(res, "true") == 0)) {
-                    ensure_optimized = true;
-                }
+                ensure_optimized = true;
             }
         };
 
