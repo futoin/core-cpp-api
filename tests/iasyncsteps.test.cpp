@@ -107,6 +107,10 @@ struct TestSteps : IAsyncSteps
         return reinterpret_cast<SyncRootID>(this);
     }
 
+    StepData& add_sync(ISync& /*obj*/) noexcept override
+    {
+        return step_;
+    }
     void await_impl(AwaitPass /*cb*/) noexcept override {}
 
     IAsyncSteps::StepData step_;
@@ -170,7 +174,7 @@ BOOST_AUTO_TEST_CASE(exec_handlers) // NOLINT
 
     // Complex
     as.success(1, 1.0, "str", true);
-    as.add([&](IAsyncSteps&, int, double, std::string&&, bool) { ++count; });
+    as.add([&](IAsyncSteps&, int, double, futoin::string&&, bool) { ++count; });
     ts.exec_handler_(as);
     BOOST_CHECK_EQUAL(count, 2);
 

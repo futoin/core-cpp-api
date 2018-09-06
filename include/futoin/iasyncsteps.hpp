@@ -234,12 +234,12 @@ namespace futoin {
 
             // 1. Create holder for actual callback with all parameters
             using OrigFunction = typename decltype(func)::Function;
-            auto* orig_fp = new (step.func_extra_.buffer) OrigFunction;
-            step.func_extra_.cleanup = [](void* ptr) {
+            auto* orig_fp = new (step.func_orig_.buffer) OrigFunction;
+            step.func_orig_.cleanup = [](void* ptr) {
                 reinterpret_cast<OrigFunction*>(ptr)->~OrigFunction();
             };
 
-            func.move(*orig_fp, step.func_extra_storage_);
+            func.move(*orig_fp, step.func_orig_storage_);
 
             // 2. Create adapter functor with all allocations in buffers
             auto adapter = [orig_fp](IAsyncSteps& asi) {
@@ -323,46 +323,9 @@ namespace futoin {
         IAsyncSteps& sync(
                 ISync& obj, ExecPass func, ErrorPass on_error = {}) noexcept
         {
-            StepData& step = add_step();
-
-            struct SyncFunc
-            {
-                struct Data
-                {
-                    Data(ISync& obj) : obj(obj) {}
-                    ISync& obj;
-                    asyncsteps::ExecPass::Storage orig_func_storage_;
-                    asyncsteps::ExecHandler orig_func;
-                    asyncsteps::ErrorHandler orig_on_error;
-                };
-
-                SyncFunc(ISync& obj) noexcept : data_(new Data(obj)) {}
-
-                SyncFunc(SyncFunc&&) noexcept = default;
-                SyncFunc& operator=(SyncFunc&&) noexcept = default;
-
-                std::unique_ptr<Data> data_;
-
-                void operator()(IAsyncSteps& asi) const
-                {
-                    auto& obj = data_->obj;
-                    asi.setCancel([&](IAsyncSteps& asi) { obj.unlock(asi); });
-                    asi.add([&](IAsyncSteps& asi) { obj.lock(asi); });
-                    asi.add(data_->orig_func, data_->orig_on_error);
-                    asi.add([&](IAsyncSteps& asi) { obj.unlock(asi); });
-                }
-            };
-
-            SyncFunc sync_func(obj);
-
-            func.move(
-                    sync_func.data_->orig_func,
-                    sync_func.data_->orig_func_storage_);
-            on_error.move(
-                    sync_func.data_->orig_on_error, step.on_error_storage_);
-
-            ExecPass(std::move(sync_func)).move(step.func_, step.func_storage_);
-
+            StepData& step = add_sync(obj);
+            func.move(step.func_, step.func_storage_);
+            on_error.move(step.on_error_, step.on_error_storage_);
             return *this;
         }
 
@@ -376,60 +339,26 @@ namespace futoin {
              details::functor_pass::Simple<void(IAsyncSteps&, T...), S, F> func,
              ErrorPass& on_error) noexcept
         {
-            StepData& step = add_step();
+            StepData& step = add_sync(obj);
 
             // 1. Create holder for actual callback with all parameters
             using OrigFunction = typename decltype(func)::Function;
-            auto* orig_fp = new (step.func_extra_.buffer) OrigFunction;
-            step.func_extra_.cleanup = [](void* ptr) {
+            auto* orig_fp = new (step.func_orig_.buffer) OrigFunction;
+            step.func_orig_.cleanup = [](void* ptr) {
                 reinterpret_cast<OrigFunction*>(ptr)->~OrigFunction();
             };
 
-            func.move(*orig_fp, step.func_extra_storage_);
+            func.move(*orig_fp, step.func_orig_storage_);
 
-            // 2. Create sync step
-            struct SyncFunc
-            {
-                struct Data
-                {
-                    Data(ISync& obj) : obj(obj) {}
-                    ISync& obj;
-                    asyncsteps::ExecPass::Storage orig_func_storage_;
-                    asyncsteps::ExecHandler orig_func;
-                    asyncsteps::ErrorHandler orig_on_error;
-                };
-
-                SyncFunc(ISync& obj) : data_(new Data(obj)) {}
-
-                std::unique_ptr<Data> data_;
-
-                void operator()(IAsyncSteps& asi) const
-                {
-                    asi.setCancel(
-                            [&](IAsyncSteps& asi) { data_->obj.unlock(asi); });
-                    asi.add([&](IAsyncSteps& asi) { data_->obj.lock(asi); });
-                    asi.add(data_->orig_func, data_->orig_on_error);
-                    asi.add([&](IAsyncSteps& asi) { data_->obj.unlock(asi); });
-                }
+            // 2. Create adapter functor with all allocations in buffers
+            auto adapter = [orig_fp](IAsyncSteps& asi) {
+                asi.nextargs().call(asi, *orig_fp);
             };
+            ExecPass adapter_pass{adapter};
+            adapter_pass.move(step.func_, step.func_storage_);
 
-            SyncFunc sync_func(obj);
-
-            // 3. Create adapter functor with all allocations in buffers
-            auto adapter = [this, orig_fp](IAsyncSteps& asi) {
-                this->nextargs().call(asi, *orig_fp);
-            };
-            ExecPass adapter_pass{std::move(adapter)};
-            adapter_pass.move(
-                    sync_func.data_->orig_func,
-                    sync_func.data_->orig_func_storage_);
-
-            // 4. Simple error callback
-            on_error.move(
-                    sync_func.data_->orig_on_error, step.on_error_storage_);
-
-            // 5. Set function
-            ExecPass(std::move(sync_func)).move(step.func_, step.func_storage_);
+            // 3. Simple error callback
+            on_error.move(step.on_error_, step.on_error_storage_);
 
             return *this;
         }
@@ -860,11 +789,11 @@ namespace futoin {
         struct StepData
         {
             ExecPass::Storage func_storage_;
-            ExecPass::Storage func_extra_storage_;
+            ExecPass::Storage func_orig_storage_;
             ErrorPass::Storage on_error_storage_;
             asyncsteps::ExecHandler func_;
             details::functor_pass::StorageBase<sizeof(asyncsteps::ExecHandler)>
-                    func_extra_;
+                    func_orig_;
             asyncsteps::ErrorHandler on_error_;
         };
 
@@ -934,6 +863,7 @@ namespace futoin {
         virtual void handle_error(ErrorCode) = 0;
         virtual asyncsteps::NextArgs& nextargs() noexcept = 0;
         virtual asyncsteps::LoopState& add_loop() noexcept = 0;
+        virtual StepData& add_sync(ISync&) noexcept = 0;
         virtual void await_impl(AwaitPass) noexcept = 0;
 
         /**
