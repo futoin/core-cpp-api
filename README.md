@@ -381,7 +381,35 @@ void example_business_logic(IAsyncSteps& asi)
 
 #### `futoin::any`
 
+This is implementation for C++17 std::any with ensured optimization for small objects
+and integration with `IMemPool`.
+
+#### `futoin::string`
+
+`IMemPool`-aware instances of `std::base_string`:
+
+- `futoin::string` with `char` type
+- `futoin::u16string` with `char16_t` type
+- `futoin::u32string` with `char32_t` type
+
 #### Memory Management
+
+Both modern glibc and gperftools malloc implementations are quite fast and may show even better
+results for some use cases. However, FutoIn API provide `IMemPool` interface to support
+implementation-defined way to optimize object allocation and/or control memory usage.
+
+`IMemPool::Allocator<T>` is compatible with standard C++ library allocator interface. It can be
+used in any container and standalone. Unless explicitly provided, a global thread-local pointer
+to `IMemPool` instance is used. It is set to standard heap implementation by default.
+
+Generally idea, is that IAsyncTool instance can set own custom memory pool for event loop thread.
+Such memory pool may disable any synchronization overhead (~20-30% boost in some tests) and or
+use dedicated pools per object size to minimize fragmentation of heap and improve performance.
+
+It's possible to create static object of `IMemPool::Allocator<T>::EnsureOptimized` type in
+any part of the program. This will trigger special logic to try to use special memory pools
+optimize for `sizeof(T)`, if supported by implementation.
+
 
 [FTN12]: https://specs.futoin.org/final/preview/ftn12_async_api.html
 
