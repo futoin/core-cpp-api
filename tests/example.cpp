@@ -1,43 +1,4 @@
 
-### FutoIn C++ API
-
-This is a primary FutoIn library for loose coupling of FutoIn users and
-actual implementations of FutoIn concepts.
-
-Current focus is still on C++11 to rely on well established and tested versions
-of toolchain.
-
-#### Concepts
-
-* [**FTN12: AsyncSteps**](https://futoin.org/docs/asyncsteps/)
-* TBD.
-
-#### Helpers
-
-* `futoin::any` - C++17 std::any optimized for use case in FutoIn & C++11
-* `futoin::Error` & `futoin::errors`
-* `futoin::IAsyncTool` - interface of event loop
-* `futoin::IMemPool` - concept of memory pools for C++
-
-### Usage
-
-The primary purpose for standalone API project is allow creating implementation-agnostic
-business logic in C++ which can run on various FutoIn implementations. Therefore,
-please check actual reference implementations for complete usage examples.
-
-#### Usage of `IAsyncSteps` interface
-
-`IAsyncSteps` is native C++ interface of FutoIn AsyncSteps ([FTN12][]) concept. It's the only
-all-in interface required to define business logic with asynchronous steps which may
-run as coroutines, native threads or any other implementation-defined way.
-
-Unlike various coroutine for C++ implementations, FutoIn AsyncSteps require no compiler-side
-support and/or architecture-specific Assembler code. It's friendly to any kind of dynamic
-security system.
-
-
-```c++
-
 // The only header needed.
 #include <futoin/iasyncsteps.hpp>
 
@@ -377,12 +338,3 @@ void example_business_logic(IAsyncSteps& asi)
         new_steps->cancel();
     }
 }
-```
-
-#### `futoin::any`
-
-#### Memory Management
-
-[FTN12]: https://specs.futoin.org/final/preview/ftn12_async_api.html
-
-
