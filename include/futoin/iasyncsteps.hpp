@@ -783,6 +783,52 @@ namespace futoin {
 
         ///@}
 
+        /**
+         * @name Control API
+         * @note Only allowed to be used on root instance.
+         */
+        ///@{
+
+        /**
+         * @brief Start execution of root IAsyncSteps object
+         */
+        virtual void execute() noexcept = 0;
+
+        /**
+         * @brief Cancel execution of root IAsyncSteps object
+         */
+        virtual void cancel() noexcept = 0;
+
+        /**
+         * @brief Get native future.
+         * @note Either void or single result variable is supported.
+         */
+        template<typename Result = void>
+        std::future<Result> promise() noexcept
+        {
+            auto& state = this->state();
+            using Promise = std::promise<Result>;
+
+            state.promise = Promise();
+            auto& promise = futoin::any_cast<Promise&>(state.promise);
+
+            state.unhandled_error = [&](ErrorCode err) {
+                auto eptr = std::current_exception();
+
+                if (eptr == nullptr) {
+                    promise.set_exception(std::make_exception_ptr(Error(err)));
+                } else {
+                    promise.set_exception(eptr);
+                }
+            };
+            promise_complete_step(promise);
+            execute();
+
+            return promise.get_future();
+        }
+
+        ///@}
+
     protected:
         using AwaitPass = asyncsteps::AwaitPass;
 
@@ -866,77 +912,19 @@ namespace futoin {
         virtual StepData& add_sync(ISync&) noexcept = 0;
         virtual void await_impl(AwaitPass) noexcept = 0;
 
-        /**
-         * @name Control API
-         */
-        ///@{
-
-        /**
-         * @brief Start execution of root IAsyncSteps object
-         */
-        virtual void execute() noexcept = 0;
-
-        /**
-         * @brief Cancel execution of root IAsyncSteps object
-         */
-        virtual void cancel() noexcept = 0;
-
-        /**
-         * @brief Get native future with result variable
-         */
-        template<typename Result>
-        std::future<Result> promise() noexcept
+    private:
+        void promise_complete_step(std::promise<void>& promise)
         {
-            auto& state = this->state();
-            using Promise = std::promise<Result>;
+            add([&](IAsyncSteps&) { promise.set_value(); });
+        }
 
-            state.promise = Promise();
-            auto& promise = futoin::any_cast<Promise&>(state.promise);
-
-            state.unhandled_error = [&](ErrorCode err) {
-                auto eptr = std::current_exception();
-
-                if (eptr == nullptr) {
-                    promise.set_exception(std::make_exception_ptr(Error(err)));
-                } else {
-                    promise.set_exception(eptr);
-                }
-            };
+        template<typename Result>
+        void promise_complete_step(std::promise<Result>& promise)
+        {
             add([&](IAsyncSteps&, Result&& res) {
                 promise.set_value(std::forward<Result>(res));
             });
-            execute();
-
-            return promise.get_future();
         }
-
-        /**
-         * @brief Get native future without result
-         */
-        std::future<void> promise() noexcept
-        {
-            auto& state = this->state();
-            using Promise = std::promise<void>;
-
-            state.promise = Promise();
-            auto& promise = futoin::any_cast<Promise&>(state.promise);
-
-            state.unhandled_error = [&](ErrorCode err) {
-                auto eptr = std::current_exception();
-
-                if (eptr == nullptr) {
-                    promise.set_exception(std::make_exception_ptr(Error(err)));
-                } else {
-                    promise.set_exception(eptr);
-                }
-            };
-            add([&](IAsyncSteps&) { promise.set_value(); });
-            execute();
-
-            return promise.get_future();
-        }
-
-        ///@}
     };
 } // namespace futoin
 
