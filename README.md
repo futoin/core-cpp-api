@@ -381,7 +381,7 @@ void example_business_logic(IAsyncSteps& asi)
 
 #### `futoin::any`
 
-This is implementation for C++17 std::any with ensured optimization for small objects
+This is implementation of C++17 `std::any` with ensured optimization for small objects
 and integration with `IMemPool`.
 
 #### `futoin::string`
@@ -402,8 +402,8 @@ implementation-defined way to optimize object allocation and/or control memory u
 used in any container and standalone. Unless explicitly provided, a global thread-local pointer
 to `IMemPool` instance is used. It is set to standard heap implementation by default.
 
-Generally idea, is that IAsyncTool instance can set own custom memory pool for event loop thread.
-Such memory pool may disable any synchronization overhead (~20-30% boost in some tests) and or
+General idea is that `IAsyncTool` instance can set own custom memory pool for its event loop thread.
+Such memory pool may disable any synchronization overhead (~20-30% boost in some tests) and/or
 use dedicated pools per object size to minimize fragmentation of heap and improve performance.
 
 It's possible to create static object of `IMemPool::Allocator<T>::EnsureOptimized` type in
