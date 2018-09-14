@@ -21,6 +21,7 @@
 #ifndef FUTOIN_DETAILS_ERASED_FUNC_HPP
 #define FUTOIN_DETAILS_ERASED_FUNC_HPP
 //---
+#include "../fatalmsg.hpp"
 #include "./functor_pass.hpp"
 #include "./nextargs.hpp"
 
@@ -118,18 +119,12 @@ namespace futoin {
                 void repeatable(const NextArgs& /*args*/) const
                         noexcept override
                 {
-                    std::cerr << "FATAL: ErasedFunc::repeatable() with no "
-                                 "callback!"
-                              << std::endl;
-                    std::terminate();
+                    FatalMsg() << "ErasedFunc::repeatable() with no callback!";
                 }
 
                 TestCast test_cast() const noexcept override
                 {
-                    std::cerr << "FATAL: ErasedFunc::test_cast() with no "
-                                 "callback!"
-                              << std::endl;
-                    std::terminate();
+                    FatalMsg() << "ErasedFunc::test_cast() with no callback!";
                 }
             };
 

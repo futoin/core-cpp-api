@@ -15,6 +15,7 @@ of toolchain.
 #### Helpers
 
 * `futoin::any` - C++17 std::any optimized for use case in FutoIn & C++11
+* `futoin::FatalMsg` - fatal error stream with std::terminate on d-tor
 * `futoin::Error` & `futoin::errors`
 * `futoin::IAsyncTool` - interface of event loop
 * `futoin::IMemPool` - concept of memory pools for C++
@@ -383,6 +384,13 @@ void example_business_logic(IAsyncSteps& asi)
 
 This is implementation of C++17 `std::any` with ensured optimization for small objects
 and integration with `IMemPool`.
+
+#### `futoin::FatalMsg`
+
+```cpp
+FatalMsg() << "Any std::ostream stuff." << std::endl << "And more";
+// std::terminate() on destruct
+```
 
 #### `futoin::string`
 
