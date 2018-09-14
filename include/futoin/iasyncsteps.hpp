@@ -240,7 +240,7 @@ namespace futoin {
 
             // 2. Create adapter functor with all allocations in buffers
             auto adapter = [orig_fp](IAsyncSteps& asi) {
-                asi.nextargs().call(asi, *orig_fp);
+                asi.nextargs().once(asi, *orig_fp);
             };
             ExecPass adapter_pass{adapter};
             adapter_pass.move(step.func_, step.func_storage_);
@@ -348,7 +348,7 @@ namespace futoin {
 
             // 2. Create adapter functor with all allocations in buffers
             auto adapter = [orig_fp](IAsyncSteps& asi) {
-                asi.nextargs().call(asi, *orig_fp);
+                asi.nextargs().once(asi, *orig_fp);
             };
             ExecPass adapter_pass{adapter};
             adapter_pass.move(step.func_, step.func_storage_);

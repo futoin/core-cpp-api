@@ -82,81 +82,193 @@ namespace futoin {
                 inline void assign(
                         A&& a, B&& b = {}, C&& c = {}, D&& d = {}) noexcept
                 {
-                    any* p = data();
+                    auto p = data();
                     *p = any(smart_forward<A>::it(a));
-                    *(++p) = any(smart_forward<B>::it(b));
-                    *(++p) = any(smart_forward<C>::it(c));
-                    *(++p) = any(smart_forward<D>::it(d));
+                    *(p + 1) = any(smart_forward<B>::it(b));
+                    *(p + 2) = any(smart_forward<C>::it(c));
+                    *(p + 3) = any(smart_forward<D>::it(d));
+                }
+
+                // Moving calls
+                //=============
+                template<typename T>
+                using argref = typename std::remove_reference<T>::type&&;
+
+                template<template<typename> class Function>
+                inline void once(
+                        IAsyncSteps& asi,
+                        const Function<void(IAsyncSteps&)>& exec_handler)
+                {
+                    exec_handler(asi);
                 }
 
                 template<typename A, template<typename> class Function>
-                inline void call(
+                inline void once(
                         IAsyncSteps& asi,
                         const Function<void(IAsyncSteps&, A)>& exec_handler)
                 {
-                    any* p = data();
-                    exec_handler(
-                            asi,
-                            any_cast<typename std::remove_reference<A>::type&&>(
-                                    *p));
+                    auto p = data();
+                    exec_handler(asi, any_cast<argref<A>>(*p));
                 }
+
                 template<
                         typename A,
                         typename B,
                         template<typename> class Function>
-                inline void call(
+                inline void once(
                         IAsyncSteps& asi,
                         const Function<void(IAsyncSteps&, A, B)>& exec_handler)
                 {
-                    any* p = data();
+                    auto p = data();
                     exec_handler(
                             asi,
-                            any_cast<typename std::remove_reference<A>::type&&>(
-                                    *p),
-                            any_cast<typename std::remove_reference<B>::type&&>(
-                                    *(p + 1)));
+                            any_cast<argref<A>>(*p),
+                            any_cast<argref<B>>(*(p + 1)));
                 }
+
                 template<
                         typename A,
                         typename B,
                         typename C,
                         template<typename> class Function>
                 inline void
-                call(IAsyncSteps& asi,
+                once(IAsyncSteps& asi,
                      const Function<void(IAsyncSteps&, A, B, C)>& exec_handler)
                 {
-                    any* p = data();
+                    auto p = data();
                     exec_handler(
                             asi,
-                            any_cast<typename std::remove_reference<A>::type&&>(
-                                    *p),
-                            any_cast<typename std::remove_reference<B>::type&&>(
-                                    *(p + 1)),
-                            any_cast<typename std::remove_reference<C>::type&&>(
-                                    *(p + 2)));
+                            any_cast<argref<A>>(*p),
+                            any_cast<argref<B>>(*(p + 1)),
+                            any_cast<argref<C>>(*(p + 2)));
                 }
+
                 template<
                         typename A,
                         typename B,
                         typename C,
                         typename D,
                         template<typename> class Function>
-                inline void call(
+                inline void once(
                         IAsyncSteps& asi,
                         const Function<void(IAsyncSteps&, A, B, C, D)>&
                                 exec_handler)
                 {
-                    any* p = data();
+                    auto p = data();
                     exec_handler(
                             asi,
-                            any_cast<typename std::remove_reference<A>::type&&>(
-                                    *p),
-                            any_cast<typename std::remove_reference<B>::type&&>(
-                                    *(p + 1)),
-                            any_cast<typename std::remove_reference<C>::type&&>(
-                                    *(p + 2)),
-                            any_cast<typename std::remove_reference<D>::type&&>(
-                                    *(p + 3)));
+                            any_cast<argref<A>>(*p),
+                            any_cast<argref<B>>(*(p + 1)),
+                            any_cast<argref<C>>(*(p + 2)),
+                            any_cast<argref<D>>(*(p + 3)));
+                }
+
+                // Const calls
+                //=============
+                template<typename T>
+                using cargref = const typename std::remove_reference<T>::type&;
+
+                template<template<typename> class Function>
+                inline void repeatable(
+                        const Function<void()>& exec_handler) const
+                {
+                    exec_handler();
+                }
+
+                template<typename A, template<typename> class Function>
+                inline void repeatable(
+                        const Function<void(A)>& exec_handler) const
+                {
+                    auto p = data();
+                    exec_handler(any_cast<cargref<A>>(*p));
+                }
+
+                template<
+                        typename A,
+                        typename B,
+                        template<typename> class Function>
+                inline void repeatable(
+                        const Function<void(A, B)>& exec_handler) const
+                {
+                    auto p = data();
+                    exec_handler(
+                            any_cast<cargref<A>>(*p),
+                            any_cast<cargref<B>>(*(p + 1)));
+                }
+
+                template<
+                        typename A,
+                        typename B,
+                        typename C,
+                        template<typename> class Function>
+                inline void repeatable(
+                        const Function<void(A, B, C)>& exec_handler) const
+                {
+                    auto p = data();
+                    exec_handler(
+                            any_cast<cargref<A>>(*p),
+                            any_cast<cargref<B>>(*(p + 1)),
+                            any_cast<cargref<C>>(*(p + 2)));
+                }
+
+                template<
+                        typename A,
+                        typename B,
+                        typename C,
+                        typename D,
+                        template<typename> class Function>
+                inline void repeatable(
+                        const Function<void(A, B, C, D)>& exec_handler) const
+                {
+                    auto p = data();
+                    exec_handler(
+                            any_cast<cargref<A>>(*p),
+                            any_cast<cargref<B>>(*(p + 1)),
+                            any_cast<cargref<C>>(*(p + 2)),
+                            any_cast<cargref<D>>(*(p + 3)));
+                }
+
+                // Test casts
+                //=============
+
+                // NOTE: multiple functions are used to support partial checks!
+
+                template<bool = true>
+                inline void test_cast() const
+                {}
+
+                template<typename A>
+                inline void test_cast() const
+                {
+                    auto p = data();
+                    any_cast<cargref<A>>(*p);
+                }
+
+                template<typename A, typename B>
+                inline void test_cast() const
+                {
+                    auto p = data();
+                    any_cast<cargref<A>>(*p);
+                    any_cast<cargref<B>>(*(p + 1));
+                }
+
+                template<typename A, typename B, typename C>
+                inline void test_cast() const
+                {
+                    auto p = data();
+                    any_cast<cargref<A>>(*p);
+                    any_cast<cargref<B>>(*(p + 1));
+                    any_cast<cargref<C>>(*(p + 2));
+                }
+
+                template<typename A, typename B, typename C, typename D>
+                inline void test_cast() const
+                {
+                    auto p = data();
+                    any_cast<cargref<A>>(*p);
+                    any_cast<cargref<B>>(*(p + 1));
+                    any_cast<cargref<C>>(*(p + 2));
+                    any_cast<cargref<D>>(*(p + 3));
                 }
             };
         } // namespace nextargs
