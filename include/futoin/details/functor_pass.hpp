@@ -15,7 +15,7 @@
 //   limitations under the License.
 //-----------------------------------------------------------------------------
 //! @file
-//! @brief Include all available native API
+//! @brief Helper to pass capture various types of callbacks.
 //-----------------------------------------------------------------------------
 
 #ifndef FUTOIN_DETAILS_FUNCTOR_PASS_HPP
@@ -32,6 +32,7 @@ namespace futoin {
         namespace functor_pass {
             constexpr size_t DEFAULT_ALIGN = sizeof(std::ptrdiff_t);
             constexpr size_t DEFAULT_SIZE = sizeof(std::ptrdiff_t) * 4;
+            constexpr size_t REDUCED_SIZE = sizeof(std::ptrdiff_t) * 2;
 
             /**
              * @brief Storage for functors behind std::function

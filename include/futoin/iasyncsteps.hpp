@@ -87,15 +87,6 @@ namespace futoin {
                 functor_pass::Function>;
         using AwaitCallback = AwaitPass::Function;
 
-        template<typename FP>
-        struct ExtendedExecPass
-        {
-            using type = functor_pass::Simple<
-                    FP,
-                    functor_pass::DEFAULT_SIZE,
-                    functor_pass::Function>;
-        };
-
         //---
         using ReferenceStateMap = std::map<futoin::string, any>;
         using StateMap = std::map<
@@ -198,6 +189,12 @@ namespace futoin {
         using ErrorPass = asyncsteps::ErrorPass;
         using CancelPass = asyncsteps::CancelPass;
 
+        template<typename FP>
+        using ExtendedExecPass = details::functor_pass::Simple<
+                FP,
+                details::functor_pass::DEFAULT_SIZE,
+                details::functor_pass::Function>;
+
         using SyncRootID = ptrdiff_t;
 
         IAsyncSteps(const IAsyncSteps&) = delete;
@@ -268,8 +265,7 @@ namespace futoin {
         IAsyncSteps& add(Functor&& func, ErrorPass on_error = {}) noexcept
         {
             return add(
-                    typename asyncsteps::ExtendedExecPass<FP>::type(
-                            std::forward<Functor>(func)),
+                    ExtendedExecPass<FP>(std::forward<Functor>(func)),
                     on_error);
         }
 
@@ -380,8 +376,7 @@ namespace futoin {
         {
             return sync(
                     obj,
-                    typename asyncsteps::ExtendedExecPass<FP>::type(
-                            std::forward<Functor>(func)),
+                    ExtendedExecPass<FP>(std::forward<Functor>(func)),
                     on_error);
         }
 
@@ -648,10 +643,7 @@ namespace futoin {
                 F func,
                 asyncsteps::LoopLabel label = nullptr)
         {
-            return forEach(
-                    c,
-                    typename asyncsteps::ExtendedExecPass<FP>::type(func),
-                    label);
+            return forEach(c, ExtendedExecPass<FP>(func), label);
         }
 
         /**
@@ -755,10 +747,7 @@ namespace futoin {
                 typename FP = typename details::StripFunctorClass<F>::type>
         IAsyncSteps& forEach(C c, F func, asyncsteps::LoopLabel label = nullptr)
         {
-            return forEach(
-                    std::move(c),
-                    typename asyncsteps::ExtendedExecPass<FP>::type(func),
-                    label);
+            return forEach(std::move(c), ExtendedExecPass<FP>(func), label);
         }
 
         /**
