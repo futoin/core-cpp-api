@@ -20,6 +20,20 @@ of toolchain.
 * `futoin::IAsyncTool` - interface of event loop
 * `futoin::IMemPool` - concept of memory pools for C++
 
+#### Private API helpers
+
+* `futoin::details::nextargs::smart_forward<T>` - like `std::forward`, but with conversion
+    of C-strings to `futoin::string`.
+* `futoin::details::nextargs::NextArgs` - type erasure of function call parameters.
+* `futoin::details::ErasedFunc` - complete type erasure of function signature.
+* `futoin::details::functor_pass` - namespace of strict efficient functor type erasure.
+    - `Storage<Size, Alignment>` - type-agnostic storage for Functor
+    - `Function<Signature, ...>` - lighter `std::function` replacement
+    - `Simple<Signature,Size,FunctionTpl=std::function,Alignment>` - proxy object to
+        capture raw function pointers, pointers to members and functors without
+        any copy or move operations.
+* `futoin::details::StripFunctorClass<T>` - extracts plain function signature.
+
 ### Usage
 
 The primary purpose for standalone API project is allow creating implementation-agnostic

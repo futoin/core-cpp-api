@@ -46,6 +46,8 @@ namespace futoin {
         using EventID = SizeType;
         using RawEventType = const char*;
 
+        static constexpr EventID NO_EVENT_ID = 0U;
+
         class EventHandler;
 
         /**
@@ -111,6 +113,7 @@ namespace futoin {
             EventHandler& operator=(Functor&& func) noexcept
             {
                 func_ = std::forward<Functor>(func);
+                return *this;
             }
 
             void operator()(const NextArgs& args) noexcept
@@ -118,9 +121,14 @@ namespace futoin {
                 func_.repeatable(args);
             }
 
-            TestCast get_test() const noexcept
+            TestCast test_cast() const noexcept
             {
                 return func_.test_cast();
+            }
+
+            const NextArgs& model_args() const noexcept
+            {
+                return func_.model_args();
             }
 
             ~EventHandler() noexcept
@@ -203,13 +211,16 @@ namespace futoin {
         template<typename... T>
         void register_event(EventType& event) noexcept
         {
-            register_event_impl(event, EventHandler([](T...) {}).get_test());
+            EventHandler model([](T...) {});
+            register_event_impl(event, model.test_cast(), model.model_args());
         }
 
         virtual void register_event_impl(
-                EventType& event, TestCast test_cast) noexcept = 0;
+                EventType& event,
+                TestCast test_cast,
+                const NextArgs& model_args) noexcept = 0;
 
-        ~IEventEmitter() noexcept = default;
+        virtual ~IEventEmitter() noexcept = default;
     };
 } // namespace futoin
 

@@ -47,21 +47,27 @@ namespace futoin {
                     FuntorAlign>;
 
             template<typename... A>
+            static void test_cast_anchor(const NextArgs& args)
+            {
+                args.test_cast<A...>();
+            }
+
+            template<typename... A>
             ErasedFunc(SimplePass<void(A...)>&& pass) noexcept
             {
-                new (impl_) TypedImpl<A...>(pass, storage_);
+                new (&impl_) TypedImpl<A...>(pass, storage_);
             }
 
             template<typename... A>
             ErasedFunc& operator=(SimplePass<void(A...)>&& pass) noexcept
             {
                 impl().~Impl();
-                new (impl_) TypedImpl<A...>(pass, storage_);
+                new (&impl_) TypedImpl<A...>(pass, storage_);
             }
 
             ErasedFunc() noexcept
             {
-                new (impl_) InvalidImpl;
+                new (&impl_) InvalidImpl;
             }
 
             ~ErasedFunc() noexcept
@@ -97,6 +103,11 @@ namespace futoin {
                 return impl().test_cast();
             }
 
+            const NextArgs& model_args() const noexcept
+            {
+                return impl().model_args();
+            }
+
         private:
             struct Impl
             {
@@ -105,6 +116,7 @@ namespace futoin {
                 virtual void repeatable(const NextArgs& args) const
                         noexcept = 0;
                 virtual TestCast test_cast() const noexcept = 0;
+                virtual const NextArgs& model_args() const noexcept = 0;
             };
 
             struct InvalidImpl final : Impl
@@ -125,6 +137,13 @@ namespace futoin {
                 TestCast test_cast() const noexcept override
                 {
                     FatalMsg() << "ErasedFunc::test_cast() with no callback!";
+                    return nullptr;
+                }
+
+                const NextArgs& model_args() const noexcept override
+                {
+                    FatalMsg() << "ErasedFunc::model_args() with no callback!";
+                    return NextArgs::Model<>::instance;
                 }
             };
 
@@ -155,7 +174,12 @@ namespace futoin {
 
                 TestCast test_cast() const noexcept override
                 {
-                    return [](const NextArgs& args) { args.test_cast<A...>(); };
+                    return &ErasedFunc::test_cast_anchor<A...>;
+                }
+
+                const NextArgs& model_args() const noexcept override
+                {
+                    return NextArgs::Model<A...>::instance;
                 }
 
                 Function func_;
@@ -163,16 +187,19 @@ namespace futoin {
 
             Impl& impl()
             {
-                return *reinterpret_cast<Impl*>(impl_);
+                return *reinterpret_cast<Impl*>(&impl_);
             }
 
             const Impl& impl() const
             {
-                return *reinterpret_cast<const Impl*>(impl_);
+                return *reinterpret_cast<const Impl*>(&impl_);
             }
 
             Storage storage_;
-            alignas(TypedImpl<>) char impl_[sizeof(TypedImpl<>)];
+            struct
+            {
+                alignas(TypedImpl<>) char buf[sizeof(TypedImpl<>)];
+            } impl_;
         };
     } // namespace details
 } // namespace futoin

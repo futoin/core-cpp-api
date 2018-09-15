@@ -74,13 +74,21 @@ namespace futoin {
                 struct NoArg
                 {};
 
+                NextArgs() noexcept = default;
+
+                template<typename... T>
+                NextArgs(T&&... args) noexcept
+                {
+                    assign(std::forward<T>(args)...);
+                }
+
                 template<
-                        typename A,
+                        typename A = NoArg,
                         typename B = NoArg,
                         typename C = NoArg,
                         typename D = NoArg>
                 inline void assign(
-                        A&& a, B&& b = {}, C&& c = {}, D&& d = {}) noexcept
+                        A&& a = {}, B&& b = {}, C&& c = {}, D&& d = {}) noexcept
                 {
                     auto p = data();
                     *p = any(smart_forward<A>::it(a));
@@ -270,7 +278,34 @@ namespace futoin {
                     any_cast<cargref<C>>(*(p + 2));
                     any_cast<cargref<D>>(*(p + 3));
                 }
+
+                // Model steps for testing purposes
+                //=================================
+
+                template<typename T>
+                using rem_constref = typename std::remove_const<
+                        typename std::remove_reference<T>::type>::type;
+
+                template<
+                        typename A = NoArg,
+                        typename B = NoArg,
+                        typename C = NoArg,
+                        typename D = NoArg>
+                struct Model;
             };
+
+            template<typename A, typename B, typename C, typename D>
+            struct NextArgs::Model
+            {
+                static const NextArgs instance;
+            };
+
+            template<typename A, typename B, typename C, typename D>
+            const NextArgs NextArgs::Model<A, B, C, D>::instance{
+                    NextArgs::rem_constref<A>(),
+                    NextArgs::rem_constref<B>(),
+                    NextArgs::rem_constref<C>(),
+                    NextArgs::rem_constref<D>()};
         } // namespace nextargs
     }     // namespace details
 } // namespace futoin

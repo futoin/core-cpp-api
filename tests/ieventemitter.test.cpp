@@ -19,9 +19,6 @@
 
 #include <futoin/ieventemitter.hpp>
 
-#include <typeindex>
-#include <typeinfo>
-
 class TestEventEmitter : public futoin::IEventEmitter
 {
 public:
@@ -43,7 +40,7 @@ public:
     {
         BOOST_CHECK_EQUAL(Accessor::event_emitter(event), this);
         BOOST_CHECK_EQUAL(Accessor::event_id(event), 1);
-        Accessor::event_id(handler) = 0;
+        Accessor::event_id(handler) = NO_EVENT_ID;
     }
 
     void emit(const EventType& event) noexcept override
@@ -62,13 +59,16 @@ public:
 
 protected:
     void register_event_impl(
-            EventType& event, TestCast test_cast) noexcept override
+            EventType& event,
+            TestCast test_cast,
+            const NextArgs& model_args) noexcept override
     {
-        BOOST_CHECK_EQUAL(Accessor::event_id(event), 0);
+        BOOST_CHECK_EQUAL(Accessor::event_id(event), (NO_EVENT_ID + 0));
         BOOST_CHECK_EQUAL(Accessor::raw_event_type(event), "TestEvent");
         Accessor::event_emitter(event) = this;
         Accessor::event_id(event) = 1;
         test_cast_ = test_cast;
+        test_cast(model_args);
     }
 
     std::size_t handle_hash_;

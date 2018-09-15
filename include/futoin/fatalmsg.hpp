@@ -25,6 +25,34 @@
 #include <iostream>
 
 namespace futoin {
+    template<bool>
+    struct FatalMsgHookT
+    {
+    public:
+        using Terminate = void (*)();
+
+        static void stream(std::ostream& s) noexcept
+        {
+            stream_ = &s;
+        }
+
+        static std::ostream& stream() noexcept
+        {
+            return *stream_;
+        }
+
+    private:
+        static std::ostream* stream_;
+    };
+
+    template<bool B>
+    std::ostream* FatalMsgHookT<B>::stream_{&std::cerr};
+
+    using FatalMsgHook = FatalMsgHookT<true>;
+
+    /**
+     * @brief A common helper for FATAL messages.
+     */
     struct FatalMsg final
     {
         FatalMsg() noexcept
@@ -40,12 +68,12 @@ namespace futoin {
 
         std::ostream& stream() const noexcept
         {
-            return std::cerr;
+            return FatalMsgHook::stream();
         }
 
         operator std::ostream&() const noexcept
         {
-            return std::cerr;
+            return FatalMsgHook::stream();
         }
 
         template<typename T>
