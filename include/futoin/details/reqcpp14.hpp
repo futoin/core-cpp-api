@@ -1,3 +1,4 @@
+// NOLINT(llvm-header-guard)
 //-----------------------------------------------------------------------------
 //   Copyright 2018 FutoIn Project
 //   Copyright 2018 Andrey Galkin
@@ -18,6 +19,6 @@
 //! @brief Ensure minimum C++14
 //-----------------------------------------------------------------------------
 
-#if __cplusplus < 201402L
+#if __cplusplus < 201402L && !defined(FUTOIN_IN_CLANG_TIDY)
 #    error Minimal C++14 is required.
 #endif

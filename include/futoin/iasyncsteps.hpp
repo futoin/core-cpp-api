@@ -617,6 +617,7 @@ namespace futoin {
 
             ls.set_handler(
                     [handler](asyncsteps::LoopState& ls, IAsyncSteps& as) {
+                        // NOLINTNEXTLINE(modernize-use-auto)
                         Iter& iter = any_cast<Iter&>(ls.data);
                         auto& val = *iter;
                         ++iter; // make sure to increment before handler call
@@ -679,6 +680,7 @@ namespace futoin {
 
             ls.set_handler(
                     [handler](asyncsteps::LoopState& ls, IAsyncSteps& as) {
+                        // NOLINTNEXTLINE(modernize-use-auto)
                         Iter& iter = any_cast<Iter&>(ls.data);
                         auto& pair = *iter;
                         ++iter; // make sure to increment before handler call
@@ -724,6 +726,7 @@ namespace futoin {
 
             ls.set_handler(
                     [handler](asyncsteps::LoopState& ls, IAsyncSteps& as) {
+                        // NOLINTNEXTLINE(modernize-use-auto)
                         Iter& iter = any_cast<Iter&>(ls.data);
                         auto& val = *iter;
                         ++iter; // make sure to increment before handler call

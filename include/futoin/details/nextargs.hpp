@@ -301,6 +301,7 @@ namespace futoin {
             };
 
             template<typename A, typename B, typename C, typename D>
+            // NOLINTNEXTLINE(cert-err58-cpp)
             const NextArgs NextArgs::Model<A, B, C, D>::instance{
                     NextArgs::rem_constref<A>(),
                     NextArgs::rem_constref<B>(),

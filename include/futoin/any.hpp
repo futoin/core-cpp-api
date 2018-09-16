@@ -33,12 +33,12 @@
 #    ifdef __GNUC__
 #        include <cxxabi.h>
 #    endif
+//---
+#    include "./imempool.hpp"
+#    include "./string.hpp"
 #else
 #    include <any>
 #endif
-//---
-#include "./imempool.hpp"
-#include "./string.hpp"
 
 namespace futoin {
 #ifdef FUTOIN_USING_OWN_ANY
@@ -55,10 +55,10 @@ namespace futoin {
 #    endif
     }
 
-    [[noreturn]] static inline void throw_bad_cast(
+    [[noreturn]] inline void throw_bad_cast(
             const std::type_info& src, const std::type_info& dst)
     {
-        std::cerr << "[FATAL] bad any cast: " << demangle(src) << " -> "
+        std::cerr << "[ERROR] bad any cast: " << demangle(src) << " -> "
                   << demangle(dst) << std::endl;
         throw std::bad_cast();
     }
@@ -83,7 +83,7 @@ namespace futoin {
 
         template<class T>
         // NOLINTNEXTLINE(misc-forwarding-reference-overload)
-        explicit any(T&& v) : type_info_(&typeid(T))
+        explicit any(T&& v) noexcept : type_info_(&typeid(T))
         {
             using U = typename std::remove_cv<
                     typename std::remove_reference<T>::type>::type;
@@ -111,7 +111,7 @@ namespace futoin {
         }
 
         template<class T>
-        any& operator=(T&& v)
+        any& operator=(T&& v) noexcept
         {
             using U = typename std::remove_cv<
                     typename std::remove_reference<T>::type>::type;
@@ -158,7 +158,7 @@ namespace futoin {
 
         static constexpr const std::type_info* void_info_ = &typeid(void);
         // NOLINTNEXTLINE(readability-named-parameter)
-        static void default_control(ControlMode, any&, any&) {}
+        static void default_control(ControlMode, any&, any&) noexcept {}
 
         template<
                 typename T,
@@ -169,7 +169,7 @@ namespace futoin {
         {};
 
         template<class T>
-        friend inline const T* any_cast(const any* that) noexcept
+        friend inline const T* any_cast(const any* that)
         {
             using U = typename std::remove_cv<
                     typename std::remove_reference<T>::type>::type;
@@ -178,7 +178,7 @@ namespace futoin {
         }
 
         template<class T>
-        friend inline T* any_cast(any* that) noexcept
+        friend inline T* any_cast(any* that)
         {
             using U = typename std::remove_cv<
                     typename std::remove_reference<T>::type>::type;
@@ -190,7 +190,7 @@ namespace futoin {
     template<typename T>
     struct any::Accessor<T, true, true>
     {
-        static inline void set(any& that, T v)
+        static inline void set(any& that, T v) noexcept
         {
             auto p = reinterpret_cast<T*>((void*) that.data_.data());
             *p = v;
@@ -220,7 +220,7 @@ namespace futoin {
     template<typename T>
     struct any::Accessor<T, false, true>
     {
-        static inline void set(any& that, T&& v)
+        static inline void set(any& that, T&& v) noexcept
         {
             new (that.data_.data()) T(std::forward<T>(v));
 
@@ -250,7 +250,7 @@ namespace futoin {
     template<typename T>
     struct any::Accessor<T, false, false>
     {
-        static inline void set(any& that, T&& v)
+        static inline void set(any& that, T&& v) noexcept
         {
             auto& mem_pool = GlobalMemPool::get_default();
             auto p = mem_pool.allocate(sizeof(T), 1);
@@ -293,7 +293,7 @@ namespace futoin {
     {
         template<typename A, typename B>
         // NOLINTNEXTLINE(readability-named-parameter)
-        static inline void set(A&, B&&)
+        static inline void set(A&, B&&) noexcept
         {
             static_assert(!std::is_same<A, B>::value, "Invalid any in any");
         }
@@ -324,7 +324,8 @@ namespace futoin {
     }
 #else
     using std::any;
-    using std::any_cast;
+    template<typename T>
+    using any_cast = std::any_cast<T>;
 #endif
 } // namespace futoin
 

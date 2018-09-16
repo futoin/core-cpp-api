@@ -27,9 +27,6 @@ option(FUTOIN_WITH_DOCS "Build documentation" ON)
 
 # Deps
 #-----
-hunter_add_package(Boost)
-find_package(Boost CONFIG REQUIRED)
-
 if (FUTOIN_WITH_TESTS)
     hunter_add_package(Boost COMPONENTS test)
     find_package(Boost CONFIG REQUIRED unit_test_framework)
@@ -49,7 +46,6 @@ add_library(futoin::api ALIAS ${PROJECT_NAME})
 
 target_include_directories(${PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}/include
-    Boost::boost
 )
 # since CMake 3.8
 #target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_11 )
@@ -78,31 +74,21 @@ if (FUTOIN_WITH_TESTS)
     enable_testing()
 
     #---
-    add_executable(FutoInAPITest
-        tests/iasyncsteps.test.cpp
-        tests/ieventemitter.test.cpp
-        tests/main.test.cpp
+    set(PROJECT_TEST_NAME FutoInAPITest)
+    file(GLOB_RECURSE PROJECT_TEST_SRC
+        ${CMAKE_CURRENT_LIST_DIR}/tests/*.test.?pp
     )
-    target_link_libraries(FutoInAPITest
+    add_executable(${PROJECT_TEST_NAME} ${PROJECT_TEST_SRC})
+    
+    target_link_libraries(${PROJECT_TEST_NAME}
         PRIVATE ${PROJECT_NAME} Boost::unit_test_framework)
-    add_test(FutoInAPI FutoInAPITest)
+    add_test(FutoInAPI ${PROJECT_TEST_NAME})
 endif()
 
 #--------------------------------------
 # Static analysis & formatting
 #--------------------------------------
 if (FUTOIN_WITH_TESTS)
-    file(GLOB_RECURSE ALL_SRC_FILES
-        ${CMAKE_CURRENT_LIST_DIR}/include/*.?pp
-        ${CMAKE_CURRENT_LIST_DIR}/src/*.?pp
-        ${CMAKE_CURRENT_LIST_DIR}/tests/*.cpp
-    )
-    set(LINT_SRC_FILES ${ALL_SRC_FILES})
-    list(FILTER LINT_SRC_FILES EXCLUDE REGEX reqcpp)
-    
-    get_target_property(BOOST_INC_DIRS "Boost::boost" INTERFACE_INCLUDE_DIRECTORIES)
-    get_target_property(FUTOIN_API_INC_DIRS "futoin::api" INTERFACE_INCLUDE_DIRECTORIES)
-    
     #---
     add_custom_target(
         clangtidy-${PROJECT_NAME} ALL
@@ -111,10 +97,14 @@ if (FUTOIN_WITH_TESTS)
         -warnings-as-errors=*
         -quiet
         -format-style=file
-        ${LINT_SRC_FILES}
+        -header-filter=${CMAKE_CURRENT_LIST_DIR}/include
+        `echo
+        $<JOIN:$<TARGET_PROPERTY:${PROJECT_NAME},SOURCES>,\ >
+        $<JOIN:$<TARGET_PROPERTY:${PROJECT_TEST_NAME},SOURCES>,\ >
         --
-        -I${FUTOIN_API_INC_DIRS}
-        -I${BOOST_INC_DIRS}
+        $<JOIN:$<TARGET_PROPERTY:${PROJECT_NAME},COMPILE_OPTIONS>,\ >
+        -I$<JOIN:$<TARGET_PROPERTY:${PROJECT_NAME},INCLUDE_DIRECTORIES>,\ -I>
+        -DFUTOIN_IN_CLANG_TIDY`
     )
     
     add_custom_target(
@@ -122,7 +112,9 @@ if (FUTOIN_WITH_TESTS)
         COMMAND /usr/bin/clang-format-6.0
         -style=file
         -i
-        ${ALL_SRC_FILES}
+        `echo
+        $<JOIN:$<TARGET_PROPERTY:${PROJECT_NAME},SOURCES>,\ >
+        $<JOIN:$<TARGET_PROPERTY:${PROJECT_TEST_NAME},SOURCES>,\ >`
     )
 endif()
 

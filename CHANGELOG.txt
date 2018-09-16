@@ -2,6 +2,7 @@
 === (next) ===
 CHANGED: minor refactoring for cleaner code
 CHANGED: refactored NextArgs to support more use cases
+CHANGED: refactoring for better clang-tidy support
 NEW: details::ErasedFunc helper to be used with NextArgs
 NEW: IEventEmitter for FTN15 Native Event API
 NEW: futoin::FatalMsg helper
