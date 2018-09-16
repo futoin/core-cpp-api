@@ -101,6 +101,7 @@ if (FUTOIN_WITH_TESTS)
     list(FILTER LINT_SRC_FILES EXCLUDE REGEX reqcpp)
     
     get_target_property(BOOST_INC_DIRS "Boost::boost" INTERFACE_INCLUDE_DIRECTORIES)
+    get_target_property(FUTOIN_API_INC_DIRS "futoin::api" INTERFACE_INCLUDE_DIRECTORIES)
     
     #---
     add_custom_target(
@@ -112,7 +113,8 @@ if (FUTOIN_WITH_TESTS)
         -format-style=file
         ${LINT_SRC_FILES}
         --
-        -I${CMAKE_CURRENT_LIST_DIR}/include/
+        -I${FUTOIN_API_INC_DIRS}
+        -I${BOOST_INC_DIRS}
     )
     
     add_custom_target(
