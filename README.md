@@ -10,7 +10,12 @@ of toolchain.
 #### Concepts
 
 * [**FTN12: AsyncSteps**](https://futoin.org/docs/asyncsteps/)
-* TBD.
+    - See `futoin::IAsyncSteps` interface and helpers.
+    - Alternative to coroutines.
+* [**FTN15: Native Event API**](https://specs.futoin.org/final/preview/ftn15_native_event.html)
+    - See `futoin::IEventEmitter` interface and helpers.
+    - Type-erased alternative to signal and slot systems.
+    - Ensures listener execution outside of emitter stack.
 
 #### Helpers
 
@@ -411,6 +416,96 @@ void example_business_logic(IAsyncSteps& asi)
     }
 }
 ```
+
+#### Usage of `IEventEmitter` interface
+
+Unlike more know ECMAScript EventEmitter interfaces, C++ version is much more strict:
+
+1. Events must be pre-registered with strict parameter types.
+    - Event name is arbitrary string with ID-based runtime optimization.
+2. All handlers must be represented by `IEventEmitter::EventHandler` objects for whole lifetime
+    active handler. Otherwise, it gets automatically disconnected.
+    - Handlers can be either persistent or "once".
+    - The same handler instance cannot listen to more than once event at a time.
+    - Freed handler can be re-used after `off()` or `once()+emit()` calls.
+3. `IEventEmitter::EventType` object used during registration should be copied or used further
+    for performance reasoned to avoid name-based event lookup.
+4. Handlers parameter signature must match, but handler is allowed to omit last parameters.
+    - This provides future compatibility for extended event parameters.
+    - `NextArgs` feature is used internally for argument checking and passing.
+    - Language cast are implicitly allowed (e.g. `futoin::string` -> `const futoin::string&`)
+5. Max listeners warning per event and per handler type.
+
+Primary benefits over more traditional signal & slot systems in C++:
+
+- It's possible to add new events without changing public ABI.
+- Implementation may backed be backed by distributed event system.
+- Handler signature is quite flexible and does not need to strictly match event signature.
+- All handlers are called after emitting business logic completes - no deadlocks and/or
+    surprising calls back from handlers.
+
+Example:
+
+```cpp
+#include <futoin/ieventemitter.hpp>
+
+void emitter_example() {
+    // NOTE: some implementation must be used by fact
+    class MyClass : public futoin::IEventEmitter
+    {
+    public:
+        MyClass() {
+            register_event<int, futoin::string, bool, float>(first_event);
+            register_event<int, int, std::vector<int>>(second_event);
+            setMaxListeners(*this, 100);
+        }
+        
+        void fire_events() {
+            emit(first_event, 1, "str", true, 1.0);
+            emit(second_event, 1, 2, {3, 4, 5});
+        }
+        
+        // Some suggested variant for exposure of event
+        // to use in efficient calls without name-based lookup.
+        const EventType& FIRST_EVENT() const {
+            return first_event;
+        }
+        
+    private:
+        EventType first_event{"FirstEvent"};
+        EventType second_event{"SecondEvent"};
+    };
+}
+
+void listen_example() {
+    using futoin::IEventEmitter;
+
+    IEventEmitter &ee = get_some_way();
+    
+    // 1. Persistent handler with full parameters.
+    IEventEmitter::EventHandler first_handler(
+            [](int, const futoin::string&, bool, float){});
+    ee.on("FirstEvent", first_handler);
+    
+    // 2. Once handler with shorter list of parameters.
+    IEventEmitter::EventHandler first_short_handler(
+            [](int, futoin::string){});
+    ee.once("FirstEvent", first_short_handler);
+    
+    // 3. Unlisten example
+    
+    // 3.1. A bit redundant, but follow FTN15 signature
+    ee.off("FirstEvent", first_handler);
+    
+    // 3.2. Automatic on end of lifetime
+    {
+        IEventEmitter::EventHandler tmp;
+        ee.on("FirstEvent", tmp);
+        // implicit ee.off() from d-tor
+    }
+}
+```
+
 
 #### `futoin::any`
 
