@@ -6,6 +6,7 @@ CHANGED: refactoring for better clang-tidy support
 NEW: details::ErasedFunc helper to be used with NextArgs
 NEW: IEventEmitter for FTN15 Native Event API
 NEW: futoin::FatalMsg helper
+NEW: FTN12 v1.13 AsyncSteps::stack() API
 
 === 0.1.0 (2018-09-07) ===
 NEW: initial release with FTN12 AsyncSteps native C++ interfaces

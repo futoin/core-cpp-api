@@ -140,6 +140,9 @@ namespace futoin {
         private:
             IMemPool* mem_pool_;
         };
+
+        template<bool = false>
+        void default_destroy_cb(void* /*ptr*/) noexcept {};
     } // namespace asyncsteps
 
     /**
@@ -188,6 +191,7 @@ namespace futoin {
         using ExecPass = asyncsteps::ExecPass;
         using ErrorPass = asyncsteps::ErrorPass;
         using CancelPass = asyncsteps::CancelPass;
+        using StackDestroyHandler = void (*)(void*);
 
         template<typename FP>
         using ExtendedExecPass = details::functor_pass::Simple<
@@ -404,6 +408,26 @@ namespace futoin {
             await_impl(FutureWait<Future>(std::forward<Future>(future)));
         }
 
+        /**
+         * @brief Create memory allocation with lifetime of the step.
+         */
+        virtual void* stack(
+                std::size_t object_size,
+                StackDestroyHandler destroy_cb =
+                        &asyncsteps::default_destroy_cb) noexcept = 0;
+
+        /**
+         * @brief Create memory allocation with lifetime of the step.
+         */
+        template<typename T, typename... Args>
+        T& stack(Args&&... args) noexcept
+        {
+            void* ptr = stack(sizeof(T), [](void* ptr) {
+                reinterpret_cast<T*>(ptr)->~T();
+            });
+            auto tptr = new (ptr) T(std::forward<Args>(args)...);
+            return *tptr;
+        }
         ///@}
 
         /**

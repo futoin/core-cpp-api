@@ -111,6 +111,13 @@ struct TestSteps : IAsyncSteps
     }
     void await_impl(AwaitPass /*cb*/) noexcept override {}
 
+    void* stack(
+            std::size_t /*object_size*/,
+            StackDestroyHandler /*destroy_cb*/) noexcept override
+    {
+        return nullptr;
+    }
+
     IAsyncSteps::StepData step_;
     asyncsteps::NextArgs next_args_;
     asyncsteps::ExecHandler& exec_handler_;
@@ -378,4 +385,35 @@ BOOST_AUTO_TEST_CASE(sync_obj) // NOLINT
     as.sync(mtx, [](IAsyncSteps&) {}, [](IAsyncSteps&, ErrorCode) {});
     as.sync(mtx, [](IAsyncSteps&, int, double, std::string&&, bool) {});
     as.sync(mtx, [](IAsyncSteps&, std::vector<int>&&) {});
+}
+
+BOOST_AUTO_TEST_CASE(stack_alloc) // NOLINT
+{
+    TestSteps ts;
+    TestSync mtx;
+    IAsyncSteps& as = ts;
+
+    as.add([](IAsyncSteps& asi) {
+        auto p1 = asi.stack(10);
+        auto& p2 = asi.stack<int>();
+        (void) p1;
+        (void) p2;
+
+        struct MyType
+        {
+            MyType() = default;
+            MyType(int a) : a(a){};
+            int a{0};
+        };
+
+        // Allocated Async Stack memory
+        auto& mytype = asi.stack<MyType>();
+        auto& mytype2 = asi.stack<MyType>(2);
+
+        asi.add([&](IAsyncSteps&) {
+            BOOST_CHECK_EQUAL(mytype.a, 0);
+            mytype.a = 1;
+            BOOST_CHECK_EQUAL(mytype2.a, 2);
+        });
+    });
 }

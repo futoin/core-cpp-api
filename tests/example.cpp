@@ -337,4 +337,22 @@ void example_business_logic(IAsyncSteps& asi)
         // Cancel execution of AsyncSteps flow
         new_steps->cancel();
     }
+
+    // 14. Allocation with lifetime of the step
+    {
+        struct MyType {
+            MyType() = default;
+            MyType(int a) : a(a) {};
+            int a{0};
+        };
+
+        // Allocated Async Stack memory
+        auto& mytype = asi.stack<MyType>();
+        auto& mytype2 = asi.stack<MyType>(2);
+
+        asi.add([&](IAsyncSteps& asi) {
+            mytype.a = 1; // It's safe!
+            assert(mytype2.a == 2);
+        });
+    }
 }
