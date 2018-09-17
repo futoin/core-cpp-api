@@ -101,18 +101,73 @@ namespace futoin {
             EventHandler(const EventHandler&) noexcept = delete;
             EventHandler& operator=(const EventHandler&) noexcept = delete;
 
+            template<typename... A>
+            EventHandler(Pass<void(A...)>&& pass) noexcept : func_(pass)
+            {}
+
+            template<typename... A>
+            EventHandler& operator=(Pass<void(A...)>&& pass) noexcept
+            {
+                func_ = pass;
+                return *this;
+            }
+
+            template<
+                    typename FP,
+                    typename = typename std::enable_if<
+                            std::is_function<FP>::value>::type>
+            EventHandler(FP* func) noexcept : func_(Pass<FP>(func))
+            {}
+
+            template<
+                    typename FP,
+                    typename = typename std::enable_if<
+                            std::is_function<FP>::value>::type>
+            EventHandler& operator=(FP* func) noexcept
+            {
+                func_ = Pass<FP>(func);
+                return *this;
+            }
+
             template<
                     typename Functor,
+                    typename = decltype(&Functor::operator()),
                     typename FP =
                             typename details::StripFunctorClass<Functor>::type>
             explicit EventHandler(Functor&& func) noexcept :
                 func_(Pass<FP>(std::forward<Functor>(func)))
             {}
 
-            template<typename Functor>
+            template<
+                    typename Functor,
+                    typename = decltype(&Functor::operator()),
+                    typename FP =
+                            typename details::StripFunctorClass<Functor>::type>
             EventHandler& operator=(Functor&& func) noexcept
             {
-                func_ = std::forward<Functor>(func);
+                func_ = Pass<FP>(std::forward<Functor>(func));
+                return *this;
+            }
+
+            template<
+                    typename Functor,
+                    typename = decltype(&Functor::operator()),
+                    typename FP =
+                            typename details::StripFunctorClass<Functor>::type>
+            explicit EventHandler(
+                    std::reference_wrapper<Functor> func_ref) noexcept :
+                func_(Pass<FP>(func_ref))
+            {}
+
+            template<
+                    typename Functor,
+                    typename = decltype(&Functor::operator()),
+                    typename FP =
+                            typename details::StripFunctorClass<Functor>::type>
+            EventHandler& operator=(
+                    std::reference_wrapper<Functor> func_ref) noexcept
+            {
+                func_ = Pass<FP>(func_ref);
                 return *this;
             }
 

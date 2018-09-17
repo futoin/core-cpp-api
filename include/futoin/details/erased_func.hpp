@@ -63,6 +63,7 @@ namespace futoin {
             {
                 impl().~Impl();
                 new (&impl_) TypedImpl<A...>(pass, storage_);
+                return *this;
             }
 
             ErasedFunc() noexcept
