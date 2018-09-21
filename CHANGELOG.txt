@@ -1,4 +1,7 @@
 
+=== (next) ===
+NEW: minor refactoring of AsyncSteps internals
+
 === 0.2.0 (2018-09-17) ===
 CHANGED: minor refactoring for cleaner code
 CHANGED: refactored NextArgs to support more use cases

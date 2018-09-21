@@ -141,6 +141,17 @@ namespace futoin {
             IMemPool* mem_pool_;
         };
 
+        struct StepData
+        {
+            ExecPass::Storage func_storage_;
+            ExecPass::Storage func_orig_storage_;
+            ErrorPass::Storage on_error_storage_;
+            asyncsteps::ExecHandler func_;
+            details::functor_pass::StorageBase<sizeof(asyncsteps::ExecHandler)>
+                    func_orig_;
+            asyncsteps::ErrorHandler on_error_;
+        };
+
         template<bool = false>
         void default_destroy_cb(void* /*ptr*/) noexcept {};
     } // namespace asyncsteps
@@ -192,6 +203,8 @@ namespace futoin {
         using ErrorPass = asyncsteps::ErrorPass;
         using CancelPass = asyncsteps::CancelPass;
         using StackDestroyHandler = void (*)(void*);
+        using StepData = asyncsteps::StepData;
+        using State = asyncsteps::State;
 
         template<typename FP>
         using ExtendedExecPass = details::functor_pass::Simple<
@@ -281,13 +294,13 @@ namespace futoin {
         /**
          * @brief Reference to associated state object.
          */
-        virtual asyncsteps::State& state() noexcept = 0;
+        virtual State& state() noexcept = 0;
 
         /**
          * @brief Handy helper to access state variables
          */
         template<typename T>
-        T& state(const asyncsteps::State::key_type& key)
+        T& state(const State::key_type& key)
         {
             return any_cast<T&>(state()[key]);
         }
@@ -296,7 +309,7 @@ namespace futoin {
          * @brief Handy helper to access state variables with default value
          */
         template<typename T>
-        T& state(const asyncsteps::State::key_type& key, T&& def_val)
+        T& state(const State::key_type& key, T&& def_val)
         {
             any& val = state()[key];
 
@@ -847,17 +860,6 @@ namespace futoin {
 
     protected:
         using AwaitPass = asyncsteps::AwaitPass;
-
-        struct StepData
-        {
-            ExecPass::Storage func_storage_;
-            ExecPass::Storage func_orig_storage_;
-            ErrorPass::Storage on_error_storage_;
-            asyncsteps::ExecHandler func_;
-            details::functor_pass::StorageBase<sizeof(asyncsteps::ExecHandler)>
-                    func_orig_;
-            asyncsteps::ErrorHandler on_error_;
-        };
 
         /**
          * Generic Future wrapping Functor to alloc both
