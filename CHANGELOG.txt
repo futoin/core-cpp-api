@@ -1,5 +1,6 @@
 
 === (next) ===
+FIXED: missing optional construct()/destruct() in IMemPool::Allocator
 NEW: minor refactoring of AsyncSteps internals
 
 === 0.2.0 (2018-09-17) ===

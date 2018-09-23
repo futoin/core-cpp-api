@@ -22,6 +22,7 @@
 #define FUTOIN_IMEMPOOL_HPP
 //---
 #include <cstdint>
+#include <utility>
 
 namespace futoin {
     /**
@@ -193,6 +194,17 @@ namespace futoin {
         inline void deallocate(pointer p, size_type n) noexcept
         {
             mem_pool->deallocate(p, sizeof(T), n);
+        }
+
+        template<typename... Args>
+        inline void construct(T* ptr, Args&&... args)
+        {
+            new (ptr) T(std::forward<Args>(args)...);
+        }
+
+        inline void destroy(T* ptr)
+        {
+            ptr->~T();
         }
 
         inline bool operator==(const Allocator& other) const noexcept
