@@ -419,30 +419,30 @@ void example_business_logic(IAsyncSteps& asi)
 
 #### Usage of `IEventEmitter` interface
 
-Unlike more know ECMAScript EventEmitter interfaces, C++ version is much more strict:
+Unlike more known ECMAScript EventEmitter interfaces, C++ version is much more strict:
 
 1. Events must be pre-registered with strict parameter types.
-    - Event name is arbitrary string with ID-based runtime optimization.
+    - Event name is an arbitrary string with ID-based runtime optimization.
 2. All handlers must be represented by `IEventEmitter::EventHandler` objects for whole lifetime
-    active handler. Otherwise, it gets automatically disconnected.
-    - Handlers can be either persistent or "once".
-    - The same handler instance cannot listen to more than once event at a time.
+    of active handler. Otherwise, it gets automatically disconnected.
+    - Handlers can be either of persistent or "once" type.
+    - The same handler instance cannot listen to more than one event at a time.
     - Freed handler can be re-used after `off()` or `once()+emit()` calls.
 3. `IEventEmitter::EventType` object used during registration should be copied or used further
-    for performance reasoned to avoid name-based event lookup.
-4. Handlers parameter signature must match, but handler is allowed to omit last parameters.
+    for performance reasones to avoid name-based event lookup.
+4. Handler's parameter signature must match event signature, but handler is allowed to omit last parameters.
     - This provides future compatibility for extended event parameters.
     - `NextArgs` feature is used internally for argument checking and passing.
-    - Language cast are implicitly allowed (e.g. `futoin::string` -> `const futoin::string&`)
+    - Language casts are implicitly allowed (e.g. `futoin::string` -> `const futoin::string&`)
 5. Max listeners warning per event and per handler type.
 
 Primary benefits over more traditional signal & slot systems in C++:
 
 - It's possible to add new events without changing public ABI.
-- Implementation may backed be backed by distributed event system.
+- Implementation may be backed by distributed event system.
 - Handler signature is quite flexible and does not need to strictly match event signature.
 - All handlers are called after emitting business logic completes - no deadlocks and/or
-    surprising calls back from handlers.
+    surprising callbacks from handlers.
 
 Example:
 
@@ -529,13 +529,14 @@ FatalMsg() << "Any std::ostream stuff." << std::endl << "And more";
 
 #### Memory Management
 
-Both modern glibc and gperftools malloc implementations are quite fast and may show even better
+Both modern glibc and gperftools malloc (tcmalloc) implementations are quite fast and may show even better
 results for some use cases. However, FutoIn API provides `IMemPool` interface to support
-implementation-defined way to optimize object allocation and/or control memory usage.
+implementation-defined way to optimize object allocation and/or control memory usage. In some cases, it
+can help to completely eliminate synchronization of independent threads in large and complex projects.
 
 `IMemPool::Allocator<T>` is compatible with standard C++ library allocator interface. It can be
 used in any container and standalone. Unless explicitly provided, a global thread-local pointer
-to `IMemPool` instance is used. It is set to standard heap implementation by default.
+to `IMemPool` instance is used. It is set to use standard heap implementation by default.
 
 General idea is that `IAsyncTool` instance can set own custom memory pool for its event loop thread.
 Such memory pool may disable any synchronization overhead (~20-30% boost in some tests) and/or
