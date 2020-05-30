@@ -100,13 +100,28 @@ if (FUTOIN_WITH_TESTS)
         -header-filter=${CMAKE_CURRENT_LIST_DIR}/include
         `echo
         $<JOIN:$<TARGET_PROPERTY:${PROJECT_NAME},SOURCES>,\ >
-        $<JOIN:$<TARGET_PROPERTY:${PROJECT_TEST_NAME},SOURCES>,\ >
         --
         $<JOIN:$<TARGET_PROPERTY:${PROJECT_NAME},COMPILE_OPTIONS>,\ >
         -I$<JOIN:$<TARGET_PROPERTY:${PROJECT_NAME},INCLUDE_DIRECTORIES>,\ -I>
         -DFUTOIN_IN_CLANG_TIDY`
     )
-    
+
+    add_custom_target(
+        clangtidy-${PROJECT_NAME}-test ALL
+        COMMAND /usr/bin/clang-tidy-6.0
+        -checks=bugprone-*,cert-*,clang-analyzer-*,clang-analyzer-*,llvm-*,misc-*,modernize-*,performance-*,readability-*
+        -warnings-as-errors=*
+        -quiet
+        -format-style=file
+        -header-filter=${CMAKE_CURRENT_LIST_DIR}/include
+        `echo
+        $<JOIN:$<TARGET_PROPERTY:${PROJECT_TEST_NAME},SOURCES>,\ >
+        --
+        $<JOIN:$<TARGET_PROPERTY:${PROJECT_TEST_NAME},COMPILE_OPTIONS>,\ >
+        -I$<JOIN:$<TARGET_PROPERTY:${PROJECT_TEST_NAME},INCLUDE_DIRECTORIES>,\ -I>
+        -DFUTOIN_IN_CLANG_TIDY`
+    )
+
     add_custom_target(
         clangformat-${PROJECT_NAME} ALL
         COMMAND /usr/bin/clang-format-6.0
