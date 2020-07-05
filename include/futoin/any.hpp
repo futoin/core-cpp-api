@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
-//   Copyright 2018 FutoIn Project
-//   Copyright 2018 Andrey Galkin
+//   Copyright 2018-2020 FutoIn Project
+//   Copyright 2018-2020 Andrey Galkin
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -71,7 +71,11 @@ namespace futoin {
     public:
         any() noexcept : type_info_(void_info_), control_(default_control) {}
 
-        any(const any& other) = delete; // not this time
+        any(const any& other)
+        {
+            type_info_ = other.type_info_;
+            (control_ = other.control_)(Copy, const_cast<any&>(other), *this);
+        }
 
         any(any&& other) noexcept
         {
@@ -81,7 +85,10 @@ namespace futoin {
             other.control_ = default_control;
         }
 
-        template<class T>
+        template<
+                class T,
+                typename D = typename std::
+                        enable_if<!std::is_same<T, any>::value, void>::type>
         // NOLINTNEXTLINE(misc-forwarding-reference-overload)
         explicit any(T&& v) noexcept : type_info_(&typeid(T))
         {
@@ -90,12 +97,21 @@ namespace futoin {
             Accessor<U>::set(*this, std::forward<U>(v));
         }
 
+        template<
+                class T,
+                typename D = typename std::
+                        enable_if<!std::is_same<T, any>::value, void>::type>
+        explicit any(const T& v) noexcept : type_info_(&typeid(T))
+        {
+            using U = typename std::remove_cv<
+                    typename std::remove_reference<T>::type>::type;
+            Accessor<U>::set(*this, v);
+        }
+
         ~any()
         {
             reset();
         }
-
-        any& operator=(const any& rhs) = delete; // not this time
 
         any& operator=(any&& other) noexcept
         {
@@ -110,7 +126,22 @@ namespace futoin {
             return *this;
         }
 
-        template<class T>
+        any& operator=(const any& other)
+        {
+            if (&other != this) {
+                control_(Cleanup, *this, *this);
+                type_info_ = other.type_info_;
+                (control_ = other.control_)(
+                        Copy, const_cast<any&>(other), *this);
+            }
+
+            return *this;
+        }
+
+        template<
+                class T,
+                typename std::enable_if<!std::is_same<T, any>::value, bool>::
+                        type = true>
         any& operator=(T&& v) noexcept
         {
             using U = typename std::remove_cv<
@@ -120,6 +151,23 @@ namespace futoin {
 
             type_info_ = &typeid(U);
             Accessor<U>::set(*this, std::forward<U>(v));
+
+            return *this;
+        }
+
+        template<
+                class T,
+                typename std::enable_if<!std::is_same<T, any>::value, bool>::
+                        type = true>
+        any& operator=(const T& v) noexcept
+        {
+            using U = typename std::remove_cv<
+                    typename std::remove_reference<T>::type>::type;
+
+            control_(Cleanup, *this, *this);
+
+            type_info_ = &typeid(U);
+            Accessor<U>::set(*this, v);
 
             return *this;
         }
@@ -148,7 +196,8 @@ namespace futoin {
         enum ControlMode
         {
             Cleanup,
-            Move
+            Move,
+            Copy,
         };
         using ControlHandler = void(ControlMode, any&, any&);
 
@@ -187,6 +236,27 @@ namespace futoin {
         }
     };
 
+    namespace details {
+        template<typename T>
+        typename std::enable_if<!std::is_copy_constructible<T>::value, void>::
+                type
+                new_copy(void* p, const T& other)
+        {
+            (void) p;
+            std::cerr << "[ERROR] no copy c-tor: " << demangle(typeid(other))
+                      << std::endl;
+            throw std::runtime_error("Missing copy c-tor");
+        }
+
+        template<typename T>
+        typename std::enable_if<std::is_copy_constructible<T>::value, void>::
+                type
+                new_copy(void* p, const T& other)
+        {
+            new (p) T(other);
+        }
+    } // namespace details
+
     template<typename T>
     struct any::Accessor<T, true, true>
     {
@@ -201,6 +271,7 @@ namespace futoin {
                 switch (mode) {
                 case Cleanup: that.control_ = default_control; break;
                 case Move:
+                case Copy:
                     *reinterpret_cast<T*>((void*) other.data_.data()) = *p;
                     break;
                 }
@@ -233,8 +304,17 @@ namespace futoin {
                     that.control_ = default_control;
                     break;
                 case Move: new (other.data_.data()) T(std::move(*p)); break;
+                case Copy:
+                    details::new_copy(
+                            other.data_.data(), static_cast<const T&>(*p));
+                    break;
                 }
             };
+        }
+
+        static inline void set(any& that, const T& v) noexcept
+        {
+            set(that, T(v));
         }
 
         static T* get(any& that)
@@ -274,8 +354,19 @@ namespace futoin {
                     that.data_[0] = nullptr;
                     that.data_[1] = nullptr;
                     break;
+                case Copy: {
+                    auto np = mem_pool->allocate(sizeof(T), 1);
+                    details::new_copy(np, static_cast<const T&>(*p));
+                    other.data_[0] = np;
+                    other.data_[1] = mem_pool;
+                } break;
                 }
             };
+        }
+
+        static inline void set(any& that, const T& v) noexcept
+        {
+            set(that, T(v));
         }
 
         static T* get(any& that)
