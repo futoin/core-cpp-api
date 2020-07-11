@@ -78,6 +78,26 @@ namespace futoin {
     };
 
     /**
+     * @brief Externded error to throw without AsyncSteps instance
+     */
+    class ExtError : public std::runtime_error
+    {
+    public:
+        ExtError(RawErrorCode code, ErrorMessage&& error_info) noexcept :
+            runtime_error(code),
+            error_info_(error_info)
+        {}
+
+        const ErrorMessage& error_info() const
+        {
+            return error_info_;
+        }
+
+    protected:
+        ErrorMessage error_info_;
+    };
+
+    /**
      * @brief Extendable namespace to hold error code definitions.
      */
     namespace errors {
