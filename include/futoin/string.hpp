@@ -55,6 +55,16 @@ namespace futoin {
     {
         return {reinterpret_cast<char*>(&ptr), sizeof(ptr)};
     }
+
+    inline std::string to_std(const futoin::string& o)
+    {
+        return {o.data(), o.size()};
+    }
+
+    inline futoin::string to_futoin(const std::string& o)
+    {
+        return {o.data(), o.size()};
+    }
 } // namespace futoin
 
 //---
