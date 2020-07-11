@@ -6,6 +6,7 @@ NEW: futoin::any copying support
 NEW: FTN3 ISpec and ISpecTools interfaces
 NEW: futoin::ExtError class with error info
 NEW: to_std()/to_futoin() helpers for strings
+NEW: experimental SpecTools interfaces
 
 === 0.2.1 (2018-09-23) ===
 FIXED: missing optional construct()/destruct() in IMemPool::Allocator

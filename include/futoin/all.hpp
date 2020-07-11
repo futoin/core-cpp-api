@@ -26,6 +26,7 @@
 #include "errors.hpp"
 #include "iasyncsteps.hpp"
 #include "iasynctool.hpp"
+#include "ispec.hpp"
 
 /**
  * @brief Main namespace for FutoIn project
