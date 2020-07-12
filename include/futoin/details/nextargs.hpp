@@ -90,7 +90,7 @@ namespace futoin {
                 inline void assign(
                         A&& a = {}, B&& b = {}, C&& c = {}, D&& d = {}) noexcept
                 {
-                    auto p = data();
+                    auto* p = data();
                     *p = any(smart_forward<A>::it(a));
                     *(p + 1) = any(smart_forward<B>::it(b));
                     *(p + 2) = any(smart_forward<C>::it(c));
@@ -115,19 +115,20 @@ namespace futoin {
                         IAsyncSteps& asi,
                         const Function<void(IAsyncSteps&, A)>& exec_handler)
                 {
-                    auto p = data();
+                    auto* p = data();
                     exec_handler(asi, any_cast<argref<A>>(*p));
                 }
 
                 template<
                         typename A,
                         typename B,
-                        template<typename> class Function>
+                        template<typename>
+                        class Function>
                 inline void once(
                         IAsyncSteps& asi,
                         const Function<void(IAsyncSteps&, A, B)>& exec_handler)
                 {
-                    auto p = data();
+                    auto* p = data();
                     exec_handler(
                             asi,
                             any_cast<argref<A>>(*p),
@@ -138,12 +139,13 @@ namespace futoin {
                         typename A,
                         typename B,
                         typename C,
-                        template<typename> class Function>
+                        template<typename>
+                        class Function>
                 inline void
                 once(IAsyncSteps& asi,
                      const Function<void(IAsyncSteps&, A, B, C)>& exec_handler)
                 {
-                    auto p = data();
+                    auto* p = data();
                     exec_handler(
                             asi,
                             any_cast<argref<A>>(*p),
@@ -156,13 +158,14 @@ namespace futoin {
                         typename B,
                         typename C,
                         typename D,
-                        template<typename> class Function>
+                        template<typename>
+                        class Function>
                 inline void once(
                         IAsyncSteps& asi,
                         const Function<void(IAsyncSteps&, A, B, C, D)>&
                                 exec_handler)
                 {
-                    auto p = data();
+                    auto* p = data();
                     exec_handler(
                             asi,
                             any_cast<argref<A>>(*p),
@@ -187,18 +190,19 @@ namespace futoin {
                 inline void repeatable(
                         const Function<void(A)>& exec_handler) const
                 {
-                    auto p = data();
+                    auto* p = data();
                     exec_handler(any_cast<cargref<A>>(*p));
                 }
 
                 template<
                         typename A,
                         typename B,
-                        template<typename> class Function>
+                        template<typename>
+                        class Function>
                 inline void repeatable(
                         const Function<void(A, B)>& exec_handler) const
                 {
-                    auto p = data();
+                    auto* p = data();
                     exec_handler(
                             any_cast<cargref<A>>(*p),
                             any_cast<cargref<B>>(*(p + 1)));
@@ -208,11 +212,12 @@ namespace futoin {
                         typename A,
                         typename B,
                         typename C,
-                        template<typename> class Function>
+                        template<typename>
+                        class Function>
                 inline void repeatable(
                         const Function<void(A, B, C)>& exec_handler) const
                 {
-                    auto p = data();
+                    auto* p = data();
                     exec_handler(
                             any_cast<cargref<A>>(*p),
                             any_cast<cargref<B>>(*(p + 1)),
@@ -224,11 +229,12 @@ namespace futoin {
                         typename B,
                         typename C,
                         typename D,
-                        template<typename> class Function>
+                        template<typename>
+                        class Function>
                 inline void repeatable(
                         const Function<void(A, B, C, D)>& exec_handler) const
                 {
-                    auto p = data();
+                    auto* p = data();
                     exec_handler(
                             any_cast<cargref<A>>(*p),
                             any_cast<cargref<B>>(*(p + 1)),
@@ -248,14 +254,14 @@ namespace futoin {
                 template<typename A>
                 inline void test_cast() const
                 {
-                    auto p = data();
+                    auto* p = data();
                     any_cast<cargref<A>>(*p);
                 }
 
                 template<typename A, typename B>
                 inline void test_cast() const
                 {
-                    auto p = data();
+                    auto* p = data();
                     any_cast<cargref<A>>(*p);
                     any_cast<cargref<B>>(*(p + 1));
                 }
@@ -263,7 +269,7 @@ namespace futoin {
                 template<typename A, typename B, typename C>
                 inline void test_cast() const
                 {
-                    auto p = data();
+                    auto* p = data();
                     any_cast<cargref<A>>(*p);
                     any_cast<cargref<B>>(*(p + 1));
                     any_cast<cargref<C>>(*(p + 2));
@@ -272,7 +278,7 @@ namespace futoin {
                 template<typename A, typename B, typename C, typename D>
                 inline void test_cast() const
                 {
-                    auto p = data();
+                    auto* p = data();
                     any_cast<cargref<A>>(*p);
                     any_cast<cargref<B>>(*(p + 1));
                     any_cast<cargref<C>>(*(p + 2));

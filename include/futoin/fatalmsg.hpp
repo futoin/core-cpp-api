@@ -66,12 +66,13 @@ namespace futoin {
             std::terminate();
         }
 
-        std::ostream& stream() const noexcept
+        // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+        std::ostream& stream() noexcept
         {
             return FatalMsgHook::stream();
         }
 
-        operator std::ostream&() const noexcept
+        operator std::ostream &() const noexcept
         {
             return FatalMsgHook::stream();
         }

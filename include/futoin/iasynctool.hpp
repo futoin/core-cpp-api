@@ -78,9 +78,7 @@ namespace futoin {
             Handle(InternalHandle& internal,
                    IAsyncTool& async_tool,
                    HandleCookie cookie) noexcept :
-                internal_(&internal),
-                async_tool_(&async_tool),
-                cookie_(cookie)
+                internal_(&internal), async_tool_(&async_tool), cookie_(cookie)
             {}
 
             Handle() = default;
@@ -144,8 +142,7 @@ namespace futoin {
         {
             CycleResult(
                     bool have_work, std::chrono::milliseconds delay) noexcept :
-                delay(delay),
-                have_work(have_work)
+                delay(delay), have_work(have_work)
             {}
 
             std::chrono::milliseconds delay;

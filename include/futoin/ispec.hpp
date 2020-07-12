@@ -57,8 +57,7 @@ namespace futoin {
             Version& operator=(Version&&) = default;
 
             Version(VersionPart major, VersionPart minor) noexcept :
-                major_(major),
-                minor_(minor)
+                major_(major), minor_(minor)
             {}
 
             VersionPart majorPart() const noexcept
@@ -226,8 +225,7 @@ namespace futoin {
             IfaceVer& operator=(IfaceVer&&) = default;
 
             IfaceVer(Iface iface, Version ver) :
-                iface_(std::move(iface)),
-                ver_(ver)
+                iface_(std::move(iface)), ver_(ver)
             {}
 
             const Iface& iface() const noexcept

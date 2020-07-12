@@ -102,8 +102,7 @@ namespace futoin {
                 dynamic_items{StateMap::allocator_type(mem_pool)},
                 mem_pool_(&mem_pool)
             {
-                catch_trace = [&](const std::exception& /*e*/) noexcept
-                {
+                catch_trace = [&](const std::exception& /*e*/) noexcept {
                     last_exception = std::current_exception();
                 };
             }
@@ -469,8 +468,8 @@ namespace futoin {
         /**
          * @brief Step abort with specified error
          */
-        [[noreturn]] void error(
-                ErrorCode error, ErrorMessage&& error_info = {}) {
+        [[noreturn]] void error(ErrorCode error, ErrorMessage&& error_info = {})
+        {
             state().error_info = std::move(error_info);
             handle_error(error);
             throw Error(error);
@@ -589,7 +588,8 @@ namespace futoin {
                 typename FP,
                 typename V = typename C::mapped_type,
                 size_t S,
-                template<typename> class ImplF,
+                template<typename>
+                class ImplF,
                 bool map = true>
         IAsyncSteps& forEach(
                 std::reference_wrapper<C> cr,
@@ -632,7 +632,8 @@ namespace futoin {
                 typename FP,
                 typename V = decltype(C().back()),
                 size_t S,
-                template<typename> class ImplF>
+                template<typename>
+                class ImplF>
         IAsyncSteps& forEach(
                 std::reference_wrapper<C> cr,
                 details::functor_pass::Simple<FP, S, ImplF> func,
@@ -693,7 +694,8 @@ namespace futoin {
                 typename FP,
                 typename V = typename C::mapped_type,
                 size_t S,
-                template<typename> class ImplF,
+                template<typename>
+                class ImplF,
                 bool map = true>
         IAsyncSteps& forEach(
                 C&& cm,
@@ -739,7 +741,8 @@ namespace futoin {
                 typename FP,
                 typename V = decltype(C().back()),
                 size_t S,
-                template<typename> class ImplF>
+                template<typename>
+                class ImplF>
         IAsyncSteps& forEach(
                 C&& cm,
                 details::functor_pass::Simple<FP, S, ImplF> func,

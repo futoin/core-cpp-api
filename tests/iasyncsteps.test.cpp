@@ -85,8 +85,7 @@ struct TestSteps : IAsyncSteps
     {
         ExecPass([&](IAsyncSteps& asi) {
             loop_state_.handler(loop_state_, asi);
-        })
-                .move(step_.func_, step_.func_storage_);
+        }).move(step_.func_, step_.func_storage_);
 
         return loop_state_;
     }
@@ -382,7 +381,8 @@ BOOST_AUTO_TEST_CASE(sync_obj) // NOLINT
     IAsyncSteps& as = ts;
 
     as.sync(mtx, [](IAsyncSteps&) {});
-    as.sync(mtx, [](IAsyncSteps&) {}, [](IAsyncSteps&, ErrorCode) {});
+    as.sync(
+            mtx, [](IAsyncSteps&) {}, [](IAsyncSteps&, ErrorCode) {});
     as.sync(mtx, [](IAsyncSteps&, int, double, std::string&&, bool) {});
     as.sync(mtx, [](IAsyncSteps&, std::vector<int>&&) {});
 }

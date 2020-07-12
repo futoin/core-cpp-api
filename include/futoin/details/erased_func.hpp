@@ -114,8 +114,8 @@ namespace futoin {
             {
                 virtual ~Impl() noexcept = default;
                 virtual bool is_valid() const noexcept = 0;
-                virtual void repeatable(const NextArgs& args) const
-                        noexcept = 0;
+                virtual void repeatable(
+                        const NextArgs& args) const noexcept = 0;
                 virtual TestCast test_cast() const noexcept = 0;
                 virtual const NextArgs& model_args() const noexcept = 0;
             };
@@ -129,8 +129,8 @@ namespace futoin {
                     return false;
                 }
 
-                void repeatable(const NextArgs& /*args*/) const
-                        noexcept override
+                void repeatable(
+                        const NextArgs& /*args*/) const noexcept override
                 {
                     FatalMsg() << "ErasedFunc::repeatable() with no callback!";
                 }
@@ -199,6 +199,7 @@ namespace futoin {
             Storage storage_;
             struct
             {
+                // NOLINTNEXTLINE(modernize-avoid-c-arrays)
                 alignas(TypedImpl<>) char buf[sizeof(TypedImpl<>)];
             } impl_;
         };

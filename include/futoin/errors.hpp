@@ -84,8 +84,7 @@ namespace futoin {
     {
     public:
         ExtError(RawErrorCode code, ErrorMessage&& error_info) noexcept :
-            runtime_error(code),
-            error_info_(error_info)
+            runtime_error(code), error_info_(error_info)
         {}
 
         const ErrorMessage& error_info() const

@@ -63,6 +63,7 @@ namespace futoin {
                 static void default_cleanup(void* /*buf*/) {}
 
                 CleanupCB cleanup{&default_cleanup};
+                // NOLINTNEXTLINE(modernize-avoid-c-arrays)
                 alignas(Align) std::uint8_t buffer[S];
             };
 
@@ -84,8 +85,7 @@ namespace futoin {
                 Function& operator=(const Function&) noexcept = default;
 
                 Function(Function&& other) noexcept :
-                    impl_(other.impl_),
-                    data_(other.data_)
+                    impl_(other.impl_), data_(other.data_)
                 {
                     other.impl_ = nullptr;
                 }
@@ -141,7 +141,7 @@ namespace futoin {
                 void operator=(std::reference_wrapper<Functor> f) noexcept
                 {
                     impl_ = [](void* ptr, A... args) {
-                        auto fp = reinterpret_cast<Functor*>(ptr);
+                        auto* fp = reinterpret_cast<Functor*>(ptr);
                         return (*fp)(std::forward<A>(args)...);
                     };
                     data_ = const_cast<FunctorNoConst*>(&f.get());
@@ -238,7 +238,7 @@ namespace futoin {
                         typename =
                                 decltype(Function(std::ref(*(Functor*) nullptr))
                                                  .target_type())>
-                // NOLINTNEXTLINE(misc-forwarding-reference-overload)
+                // NOLINTNEXTLINE(misc-forwarding-reference-overload,bugprone-forwarding-reference-overload)
                 Simple(Functor&& f) :
                     ptr_(&f),
                     move_cb_([](void* ptr, Function& func, Storage& storage) {

@@ -203,6 +203,7 @@ namespace futoin {
 
         const std::type_info* type_info_;
         ControlHandler* control_;
+        // NOLINTNEXTLINE(readability-magic-numbers)
         std::array<void*, 8> data_;
 
         static constexpr const std::type_info* void_info_ = &typeid(void);
@@ -262,11 +263,11 @@ namespace futoin {
     {
         static inline void set(any& that, T v) noexcept
         {
-            auto p = reinterpret_cast<T*>((void*) that.data_.data());
+            auto* p = reinterpret_cast<T*>((void*) that.data_.data());
             *p = v;
 
             that.control_ = [](ControlMode mode, any& that, any& other) {
-                auto p = reinterpret_cast<T*>((void*) that.data_.data());
+                auto* p = reinterpret_cast<T*>((void*) that.data_.data());
 
                 switch (mode) {
                 case Cleanup: that.control_ = default_control; break;
@@ -296,7 +297,7 @@ namespace futoin {
             new (that.data_.data()) T(std::forward<T>(v));
 
             that.control_ = [](ControlMode mode, any& that, any& other) {
-                auto p = reinterpret_cast<T*>(that.data_.data());
+                auto* p = reinterpret_cast<T*>(that.data_.data());
 
                 switch (mode) {
                 case Cleanup:
@@ -333,14 +334,14 @@ namespace futoin {
         static inline void set(any& that, T&& v) noexcept
         {
             auto& mem_pool = GlobalMemPool::get_default();
-            auto p = mem_pool.allocate(sizeof(T), 1);
+            auto* p = mem_pool.allocate(sizeof(T), 1);
             new (p) T(std::forward<T>(v));
             that.data_[0] = p;
             that.data_[1] = &mem_pool;
 
             that.control_ = [](ControlMode mode, any& that, any& other) {
-                auto p = reinterpret_cast<T*>(that.data_[0]);
-                auto mem_pool = reinterpret_cast<IMemPool*>(that.data_[1]);
+                auto* p = reinterpret_cast<T*>(that.data_[0]);
+                auto* mem_pool = reinterpret_cast<IMemPool*>(that.data_[1]);
 
                 switch (mode) {
                 case Cleanup:
@@ -355,7 +356,7 @@ namespace futoin {
                     that.data_[1] = nullptr;
                     break;
                 case Copy: {
-                    auto np = mem_pool->allocate(sizeof(T), 1);
+                    auto* np = mem_pool->allocate(sizeof(T), 1);
                     details::new_copy(np, static_cast<const T&>(*p));
                     other.data_[0] = np;
                     other.data_[1] = mem_pool;

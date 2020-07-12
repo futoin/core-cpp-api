@@ -1,0 +1,4 @@
+---
+Checks:          'bugprone-*,cert-*,clang-analyzer-*,clang-analyzer-*,llvm-*,misc-*,modernize-*,performance-*,readability-*,-modernize-use-trailing-return-type,-misc-non-private-member-variables-in-classes,-readability-named-parameter,-readability-qualified-auto,-llvm-qualified-auto'
+WarningsAsErrors: '*'
+FormatStyle:     file

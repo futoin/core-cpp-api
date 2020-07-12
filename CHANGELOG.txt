@@ -2,6 +2,7 @@
 === (next) ===
 CHANGED: updated to the latest Hunter
 CHANGED: to disable tests & docs by default
+CHANGED: upgraded clang-format/clang-tidy to v10
 NEW: futoin::any copying support
 NEW: FTN3 ISpec and ISpecTools interfaces
 NEW: futoin::ExtError class with error info
