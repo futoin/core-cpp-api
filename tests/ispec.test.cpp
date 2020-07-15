@@ -207,7 +207,7 @@ BOOST_AUTO_TEST_CASE(functions) // NOLINT
     prm.desc = "desc";
     func.params.emplace_back(prm);
     func.params.emplace_back(ftnst::Function::Param{
-            "prm2", "SomeType", futoin::any{futoin::string{"def"}}});
+            "prm2", "SomeType", futoin::any{futoin::string{"def"}}, "desc"});
 
     BOOST_CHECK(!func.is_single_result());
     func.result_single = "SomeType";
@@ -218,7 +218,8 @@ BOOST_AUTO_TEST_CASE(functions) // NOLINT
     rv.type = "SomeType";
     rv.desc = "desc";
     func.result.emplace_back(rv);
-    func.result.emplace_back(ftnst::Function::ResultVar{"rslt2", "SomeType"});
+    func.result.emplace_back(
+            ftnst::Function::ResultVar{"rslt2", "SomeType", "desc"});
 
     BOOST_CHECK(!func.rawresult);
     BOOST_CHECK(!func.rawupload);
