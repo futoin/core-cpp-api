@@ -117,7 +117,7 @@ namespace futoin {
                 using Name = futoin::string;
 
                 Type::Name type;
-                bool optional;
+                bool optional{false};
                 Desc desc;
             };
 
@@ -236,6 +236,34 @@ namespace futoin {
             {
                 return ver_;
             }
+            bool operator==(const IfaceVer& o) const
+            {
+                return (iface_ == o.iface_) && (ver_ == o.ver_);
+            }
+            bool operator!=(const IfaceVer& o) const
+            {
+                return (iface_ != o.iface_) || (ver_ != o.ver_);
+            }
+            bool operator<(const IfaceVer& o) const
+            {
+                return (iface_ < o.iface_)
+                       || ((iface_ == o.iface_) && (ver_ < o.ver_));
+            }
+            bool operator>(const IfaceVer& o) const
+            {
+                return (iface_ > o.iface_)
+                       || ((iface_ == o.iface_) && (ver_ > o.ver_));
+            }
+            bool operator<=(const IfaceVer& o) const
+            {
+                return (iface_ < o.iface_)
+                       || ((iface_ == o.iface_) && (ver_ <= o.ver_));
+            }
+            bool operator>=(const IfaceVer& o) const
+            {
+                return (iface_ > o.iface_)
+                       || ((iface_ == o.iface_) && (ver_ >= o.ver_));
+            }
 
         protected:
             Iface iface_;
@@ -248,10 +276,22 @@ namespace futoin {
         using ReferenceRequirementList = std::set<Requirement>;
         using RequirementList = std::set<
                 Requirement,
-                ReferenceRequirementList::key_type,
-                IMemPool::Allocator<ReferenceRequirementList::value_type>>;
+                ReferenceRequirementList::key_compare,
+                IMemPool::Allocator<ReferenceRequirementList::key_type>>;
 
         class ISpecTools;
+
+        using ReferenceGenericObject = std::map<string, any>;
+        using GenericObject = std::map<
+                string,
+                any,
+                ReferenceGenericObject::key_compare,
+                IMemPool::Allocator<ReferenceGenericObject::value_type>>;
+
+        using ReferenceGenericArray = std::vector<any>;
+        using GenericArray = std::vector<
+                any,
+                IMemPool::Allocator<ReferenceGenericArray::value_type>>;
 
         /**
          * @brief Representation of FTN3 specification
