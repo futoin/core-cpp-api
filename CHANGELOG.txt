@@ -1,5 +1,5 @@
 
-=== (next) ===
+=== 0.2.2 (2023-03-29) ===
 CHANGED: updated to the latest Hunter
 CHANGED: to disable tests & docs by default
 CHANGED: upgraded clang-format/clang-tidy to v10
