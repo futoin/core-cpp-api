@@ -1,6 +1,6 @@
 {
   "name": "futoin/core-cpp-api",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "vcs": "git",
   "plugins": {
     "release": "futoin.cid.misc.releasetool"
