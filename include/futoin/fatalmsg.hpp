@@ -72,7 +72,7 @@ namespace futoin {
             return FatalMsgHook::stream();
         }
 
-        operator std::ostream &() const noexcept
+        operator std::ostream&() const noexcept
         {
             return FatalMsgHook::stream();
         }
