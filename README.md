@@ -12,6 +12,9 @@ of toolchain.
 * [**FTN12: AsyncSteps**](https://futoin.org/docs/asyncsteps/)
     - See `futoin::IAsyncSteps` interface and helpers.
     - Alternative to coroutines.
+    - `FutoInAsyncSteps` and `FutoInAsyncStepsAPI` is binary C/Assembly-level
+        AsyncSteps interface for true cross-technology support.
+    - `FutoInSync` and `FutoInSyncAPI` is counterpart for AsyncSteps sync objects.
 * [**FTN15: Native Event API**](https://specs.futoin.org/final/preview/ftn15_native_event.html)
     - See `futoin::IEventEmitter` interface and helpers.
     - Type-erased alternative to signal and slot systems.
@@ -24,6 +27,9 @@ of toolchain.
 * `futoin::Error` & `futoin::errors`
 * `futoin::IAsyncTool` - interface of event loop
 * `futoin::IMemPool` - concept of memory pools for C++
+* `FutoInBinaryValue` - universal Plain-Old-Data as an intermediate storage for
+    Binary AsyncSteps argument
+* `FutoInArgs` - a collection of FutoInBinaryValue arguments
 
 #### Private API helpers
 
@@ -38,6 +44,8 @@ of toolchain.
         capture raw function pointers, pointers to members and functors without
         any copy or move operations.
 * `futoin::details::StripFunctorClass<T>` - extracts plain function signature.
+* `futoin::details::moveHelper<T,Any>` - helpers for conversion from `FutoInBinaryValue`
+    to `futoin::any` and vice-versa.
 
 ### Usage
 
@@ -526,6 +534,28 @@ FatalMsg() << "Any std::ostream stuff." << std::endl << "And more";
 - `futoin::string` with `char` type
 - `futoin::u16string` with `char16_t` type
 - `futoin::u32string` with `char32_t` type
+
+#### `FutoInAsyncSteps`, `FutoInSync`, `FutoInArgs` and `FutoInBinaryValue`
+
+The low-level binary interface has been designed and implemented with the idea to close the gap
+for cross-technology support where sophisticated C++ approach may not be convenient, especially
+when argument passing types may not be known in advance or may not map so easily to specific
+technology types.
+
+It is strongly encouraged to use C++ interface because this binary interface is designed mostly as a
+technology-agnostic wrapper, which can be easily used even in plain Assembly. It has some
+performance and type safety drawbacks therefore.
+
+`FutoInBinaryValue` can be relatively easily converted to and from `futoin::any`
+using `futoin::details::moveHelper`. It is designed to represent data both as Plain-Old-Data (POD), but
+also to keep efficient technology-specific representation. Non-fundamentals types, which cannot be
+converted to POD are kept only as custom object pointers. Each instance supports a cleanup handler,
+which gets automatically invoked from `futoin_reset_binval()` helper. Reference implementation
+of binary AsyncSteps interface use that internally.
+
+Technology-agnostic interface must use only fundamental types: signed and unsigned integers of 8,
+16, 32 and 64 bits in width, floats, doubles, booleans, strings of 8, 16 and 32 bit in character width,
+and dynamic arrays with the same fundamental element types (std::vector in C++ case).
 
 #### Memory Management
 

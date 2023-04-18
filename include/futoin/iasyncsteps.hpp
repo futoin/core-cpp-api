@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
-//   Copyright 2018 FutoIn Project
-//   Copyright 2018 Andrey Galkin
+//   Copyright 2018-2023 FutoIn Project
+//   Copyright 2018-2023 Andrey Galkin
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -38,11 +38,13 @@
 #include <typeinfo>
 //---
 #include "any.hpp"
+#include "binarysteps.h"
 #include "details/asyncloop.hpp"
 #include "details/functor_pass.hpp"
 #include "details/nextargs.hpp"
 #include "details/strip_functor_class.hpp"
 #include "errors.hpp"
+#include "iasynctool.hpp"
 #include "imempool.hpp"
 //---
 
@@ -95,10 +97,10 @@ namespace futoin {
                 ReferenceStateMap::key_compare,
                 IMemPool::Allocator<ReferenceStateMap::value_type>>;
 
-        class State
+        class BaseState
         {
         public:
-            explicit State(IMemPool& mem_pool) noexcept :
+            explicit BaseState(IMemPool& mem_pool) noexcept :
                 dynamic_items{StateMap::allocator_type(mem_pool)},
                 mem_pool_(&mem_pool)
             {
@@ -113,15 +115,8 @@ namespace futoin {
                     std::function<void(const std::exception&) noexcept>;
             using UnhandledError = std::function<void(ErrorCode) noexcept>;
 
-            inline mapped_type& operator[](const key_type& key) noexcept
-            {
-                return dynamic_items[key];
-            }
-
-            inline mapped_type& operator[](key_type&& key) noexcept
-            {
-                return dynamic_items[std::forward<key_type>(key)];
-            }
+            virtual mapped_type& operator[](const key_type& key) noexcept = 0;
+            virtual mapped_type& operator[](key_type&& key) noexcept = 0;
 
             inline IMemPool& mem_pool() noexcept
             {
@@ -138,6 +133,27 @@ namespace futoin {
 
         private:
             IMemPool* mem_pool_;
+        };
+
+        class State : public BaseState
+        {
+        public:
+            explicit State(IMemPool& mem_pool) noexcept :
+                BaseState(mem_pool),
+                dynamic_items{StateMap::allocator_type(mem_pool)}
+            {}
+
+            mapped_type& operator[](const key_type& key) noexcept override
+            {
+                return dynamic_items[key];
+            }
+
+            mapped_type& operator[](key_type&& key) noexcept override
+            {
+                return dynamic_items[std::forward<key_type>(key)];
+            }
+
+            StateMap dynamic_items;
         };
 
         struct StepData
@@ -158,7 +174,7 @@ namespace futoin {
     /**
      * @brief Synchronization primitive interface.
      */
-    class ISync
+    class ISync : public FutoInSync
     {
     public:
         /**
@@ -203,7 +219,7 @@ namespace futoin {
         using CancelPass = asyncsteps::CancelPass;
         using StackDestroyHandler = void (*)(void*);
         using StepData = asyncsteps::StepData;
-        using State = asyncsteps::State;
+        using BaseState = asyncsteps::BaseState;
 
         template<typename FP>
         using ExtendedExecPass = details::functor_pass::Simple<
@@ -293,13 +309,13 @@ namespace futoin {
         /**
          * @brief Reference to associated state object.
          */
-        virtual State& state() noexcept = 0;
+        virtual BaseState& state() noexcept = 0;
 
         /**
          * @brief Handy helper to access state variables
          */
         template<typename T>
-        T& state(const State::key_type& key)
+        T& state(const BaseState::key_type& key)
         {
             return any_cast<T&>(state()[key]);
         }
@@ -308,7 +324,7 @@ namespace futoin {
          * @brief Handy helper to access state variables with default value
          */
         template<typename T>
-        T& state(const State::key_type& key, T&& def_val)
+        T& state(const BaseState::key_type& key, T&& def_val)
         {
             any& val = state()[key];
 
@@ -440,6 +456,22 @@ namespace futoin {
             auto tptr = new (ptr) T(std::forward<Args>(args)...);
             return *tptr;
         }
+
+        /**
+         * @brief Cast to pure binary AsyncSteps interface
+         */
+        virtual FutoInAsyncSteps& binary() noexcept = 0;
+
+        /**
+         * @brief Wrap pure binary AsyncSteps interface into C++ interface
+         */
+        virtual std::unique_ptr<IAsyncSteps> wrap(
+                FutoInAsyncSteps& binary_steps) noexcept = 0;
+
+        /**
+         * @brief Get associated AsyncTool event reactor instance
+         */
+        virtual IAsyncTool& tool() noexcept = 0;
         ///@}
 
         /**
@@ -535,9 +567,7 @@ namespace futoin {
          */
         IAsyncSteps& loop(ExecPass func, asyncsteps::LoopLabel label = nullptr)
         {
-            auto& ls = add_loop();
-
-            ls.label = label;
+            auto& ls = add_loop(label);
 
             asyncsteps::ExecHandler handler;
             func.move(handler, ls.outer_func_storage);
@@ -560,9 +590,8 @@ namespace futoin {
                         asyncsteps::functor_pass::Function> func,
                 asyncsteps::LoopLabel label = nullptr)
         {
-            auto& ls = add_loop();
+            auto& ls = add_loop(label);
 
-            ls.label = label;
             ls.i = 0;
 
             typename decltype(func)::Function handler;
@@ -601,9 +630,8 @@ namespace futoin {
             auto end = std::end(c);
             using Iter = decltype(iter);
 
-            auto& ls = add_loop();
+            auto& ls = add_loop(label);
 
-            ls.label = label;
             ls.data = any(std::move(iter));
 
             typename decltype(func)::Function handler;
@@ -644,9 +672,8 @@ namespace futoin {
             auto end = std::end(c);
             using Iter = decltype(iter);
 
-            auto& ls = add_loop();
+            auto& ls = add_loop(label);
 
-            ls.label = label;
             ls.i = 0;
             ls.data = any(std::move(iter));
 
@@ -702,7 +729,7 @@ namespace futoin {
                 details::functor_pass::Simple<FP, S, ImplF> func,
                 asyncsteps::LoopLabel label = nullptr)
         {
-            auto& ls = add_loop();
+            auto& ls = add_loop(label);
 
             ls.container_data = std::forward<C>(cm);
 
@@ -711,7 +738,6 @@ namespace futoin {
             auto end = std::end(c);
             using Iter = decltype(iter);
 
-            ls.label = label;
             ls.data = any(std::move(iter));
 
             typename decltype(func)::Function handler;
@@ -748,7 +774,7 @@ namespace futoin {
                 details::functor_pass::Simple<FP, S, ImplF> func,
                 asyncsteps::LoopLabel label = nullptr)
         {
-            auto& ls = add_loop();
+            auto& ls = add_loop(label);
 
             ls.container_data = std::forward<C>(cm);
 
@@ -757,7 +783,6 @@ namespace futoin {
             auto end = std::end(c);
             using Iter = decltype(iter);
 
-            ls.label = label;
             ls.i = 0;
             ls.data = any(std::move(iter));
 
@@ -929,7 +954,8 @@ namespace futoin {
         virtual void handle_success() = 0;
         virtual void handle_error(ErrorCode) = 0;
         virtual asyncsteps::NextArgs& nextargs() noexcept = 0;
-        virtual asyncsteps::LoopState& add_loop() noexcept = 0;
+        virtual asyncsteps::LoopState& add_loop(
+                asyncsteps::LoopLabel label) noexcept = 0;
         virtual StepData& add_sync(ISync&) noexcept = 0;
         virtual void await_impl(AwaitPass) noexcept = 0;
 

@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
-//   Copyright 2018 FutoIn Project
-//   Copyright 2018 Andrey Galkin
+//   Copyright 2018-2023 FutoIn Project
+//   Copyright 2018-2023 Andrey Galkin
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ namespace futoin {
     using u16string = std::basic_string<
             char16_t,
             std::char_traits<char16_t>,
-            IMemPool::Allocator<char>>;
+            IMemPool::Allocator<char16_t>>;
 
     /**
      * @brief Placeholder for heap synchronization optimized version
@@ -48,7 +48,7 @@ namespace futoin {
     using u32string = std::basic_string<
             char32_t,
             std::char_traits<char32_t>,
-            IMemPool::Allocator<char>>;
+            IMemPool::Allocator<char32_t>>;
 
     template<typename T>
     inline futoin::string key_from_pointer(T* ptr)

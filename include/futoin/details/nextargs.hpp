@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
-//   Copyright 2018 FutoIn Project
-//   Copyright 2018 Andrey Galkin
+//   Copyright 2018-2023 FutoIn Project
+//   Copyright 2018-2023 Andrey Galkin
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -25,6 +25,8 @@
 #include <functional>
 //---
 #include "../any.hpp"
+#include "../binarysteps.h"
+#include "./binarymove.hpp"
 
 namespace futoin {
     class IAsyncSteps;
@@ -172,6 +174,24 @@ namespace futoin {
                             any_cast<argref<B>>(*(p + 1)),
                             any_cast<argref<C>>(*(p + 2)),
                             any_cast<argref<D>>(*(p + 3)));
+                }
+
+                inline void moveTo(FutoInArgs& args)
+                {
+                    auto* p = data();
+                    p->extract(args.arg0);
+                    (p + 1)->extract(args.arg1);
+                    (p + 2)->extract(args.arg2);
+                    (p + 3)->extract(args.arg3);
+                }
+
+                inline void moveFrom(FutoInArgs& args)
+                {
+                    auto* p = data();
+                    details::moveFrom(args.arg0, *p);
+                    details::moveFrom(args.arg1, *(p + 1));
+                    details::moveFrom(args.arg2, *(p + 2));
+                    details::moveFrom(args.arg3, *(p + 3));
                 }
 
                 // Const calls

@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
-//   Copyright 2018 FutoIn Project
-//   Copyright 2018 Andrey Galkin
+//   Copyright 2018-2023 FutoIn Project
+//   Copyright 2018-2023 Andrey Galkin
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ struct TestSteps : IAsyncSteps
         state_(mem_pool_)
     {}
 
-    asyncsteps::State& state() noexcept override
+    asyncsteps::BaseState& state() noexcept override
     {
         return state_;
     }
@@ -81,8 +81,11 @@ struct TestSteps : IAsyncSteps
     void waitExternal() noexcept override {}
     void execute() noexcept override {}
     void cancel() noexcept override {}
-    asyncsteps::LoopState& add_loop() noexcept override
+    asyncsteps::LoopState& add_loop(
+            asyncsteps::LoopLabel label) noexcept override
     {
+        loop_state_.label = label;
+
         ExecPass([&](IAsyncSteps& asi) {
             loop_state_.handler(loop_state_, asi);
         }).move(step_.func_, step_.func_storage_);
@@ -117,6 +120,21 @@ struct TestSteps : IAsyncSteps
         return nullptr;
     }
 
+    FutoInAsyncSteps& binary() noexcept override
+    {
+        return binary_api_;
+    }
+
+    std::unique_ptr<IAsyncSteps> wrap(FutoInAsyncSteps&) noexcept override
+    {
+        return {};
+    }
+
+    IAsyncTool& tool() noexcept override
+    {
+        return *async_tool_;
+    }
+
     IAsyncSteps::StepData step_;
     asyncsteps::NextArgs next_args_;
     asyncsteps::ExecHandler& exec_handler_;
@@ -124,6 +142,8 @@ struct TestSteps : IAsyncSteps
     TestMemPool mem_pool_;
     asyncsteps::State state_;
     asyncsteps::LoopState loop_state_;
+    FutoInAsyncSteps binary_api_{nullptr};
+    IAsyncTool* async_tool_{nullptr};
 };
 
 struct TestSync : ISync

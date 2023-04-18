@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
-//   Copyright 2018 FutoIn Project
-//   Copyright 2018 Andrey Galkin
+//   Copyright 2018-2023 FutoIn Project
+//   Copyright 2018-2023 Andrey Galkin
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@
 #include <chrono>
 #include <functional>
 //---
+#include "binarysteps.h"
 #include "details/functor_pass.hpp"
 #include "imempool.hpp"
 
@@ -72,7 +73,7 @@ namespace futoin {
         /**
          * @brief Handle to scheduled callback
          */
-        class Handle
+        class Handle final
         {
         public:
             Handle(InternalHandle& internal,
@@ -88,6 +89,27 @@ namespace futoin {
 
             Handle(Handle&& other) noexcept = default;
             Handle& operator=(Handle&& other) noexcept = default;
+
+            Handle(const FutoInHandle& other) noexcept
+            {
+                this->operator=(other);
+            }
+            Handle& operator=(const FutoInHandle& other) noexcept
+            {
+                internal_ = reinterpret_cast<decltype(internal_)>(other.data1);
+                async_tool_ =
+                        reinterpret_cast<decltype(async_tool_)>(other.data2);
+                cookie_ = other.data3;
+                return *this;
+            }
+            FutoInHandle binary()
+            {
+                return {
+                        internal_,
+                        async_tool_,
+                        cookie_,
+                };
+            }
 
             ~Handle() noexcept = default;
 

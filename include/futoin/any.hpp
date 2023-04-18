@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
-//   Copyright 2018-2020 FutoIn Project
-//   Copyright 2018-2020 Andrey Galkin
+//   Copyright 2018-2023 FutoIn Project
+//   Copyright 2018-2023 Andrey Galkin
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -22,7 +22,8 @@
 #define FUTOIN_ANY_HPP
 //---
 
-#if __cplusplus < 201703L
+// Always use custom any due to extensions for binary interface
+#if 1 /* __cplusplus < 201703L */
 #    define FUTOIN_USING_OWN_ANY
 #endif
 
@@ -34,6 +35,7 @@
 #        include <cxxabi.h>
 #    endif
 //---
+#    include "./details/binarymove.hpp"
 #    include "./imempool.hpp"
 #    include "./string.hpp"
 #else
@@ -192,12 +194,18 @@ namespace futoin {
             return *type_info_;
         }
 
+        void extract(FutoInBinaryValue& v)
+        {
+            control_(Extract, *this, reinterpret_cast<any&>(v));
+        }
+
     private:
         enum ControlMode
         {
             Cleanup,
             Move,
             Copy,
+            Extract,
         };
         using ControlHandler = void(ControlMode, any&, any&);
 
@@ -275,6 +283,12 @@ namespace futoin {
                 case Copy:
                     *reinterpret_cast<T*>((void*) other.data_.data()) = *p;
                     break;
+                case Extract:
+                    details::moveTo<T>(
+                            reinterpret_cast<FutoInBinaryValue&>(other),
+                            std::move(that),
+                            std::move(*p));
+                    break;
                 }
             };
         }
@@ -308,6 +322,12 @@ namespace futoin {
                 case Copy:
                     details::new_copy(
                             other.data_.data(), static_cast<const T&>(*p));
+                    break;
+                case Extract:
+                    details::moveTo<T>(
+                            reinterpret_cast<FutoInBinaryValue&>(other),
+                            std::move(that),
+                            std::move(*p));
                     break;
                 }
             };
@@ -361,6 +381,12 @@ namespace futoin {
                     other.data_[0] = np;
                     other.data_[1] = mem_pool;
                 } break;
+                case Extract:
+                    details::moveTo<T>(
+                            reinterpret_cast<FutoInBinaryValue&>(other),
+                            std::move(that),
+                            std::move(*p));
+                    break;
                 }
             };
         }

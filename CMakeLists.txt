@@ -36,9 +36,11 @@ endif()
 #-----
 file(GLOB_RECURSE PROJECT_HDR
     ${CMAKE_CURRENT_LIST_DIR}/include/*.?pp
+    ${CMAKE_CURRENT_LIST_DIR}/include/*.?
 )
 file(GLOB_RECURSE PROJECT_SRC
     ${CMAKE_CURRENT_LIST_DIR}/src/*.?pp
+    ${CMAKE_CURRENT_LIST_DIR}/src/*.?
 )
 
 # Result objects
