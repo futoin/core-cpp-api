@@ -1,4 +1,4 @@
-=== (next) ===
+=== 0.3.2 (2026-08-11) ===
 CHANGED: FTN12 v1.15 NoThrow() API support
 CHANGED: dependency maintenance
 FIXED: clang 19 and C++20 compatibility
