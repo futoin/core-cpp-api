@@ -125,7 +125,6 @@ namespace futoin {
 
             StateMap dynamic_items;
             ErrorMessage error_info;
-            LoopLabel error_loop_label{nullptr};
             std::exception_ptr last_exception{nullptr};
             CatchTrace catch_trace;
             UnhandledError unhandled_error;
@@ -498,12 +497,22 @@ namespace futoin {
         }
 
         /**
+         * @brief Step abort with specified error without exception
+         *
+         * The use is responsible for immediate return from the step function.
+         */
+        void errorNoThrow(ErrorCode error, ErrorMessage&& error_info = {})
+        {
+            state().error_info = std::move(error_info);
+            handle_error(error);
+        }
+
+        /**
          * @brief Step abort with specified error
          */
         [[noreturn]] void error(ErrorCode error, ErrorMessage&& error_info = {})
         {
-            state().error_info = std::move(error_info);
-            handle_error(error);
+            errorNoThrow(error, std::move(error_info));
             throw Error(error);
         }
 
@@ -816,12 +825,32 @@ namespace futoin {
 
         /**
          * @brief Break async loop.
+         *
+         * The use is responsible for immediate return from the step function.
+         */
+        inline void breakLoopNoThrow(asyncsteps::LoopLabel label = nullptr)
+        {
+            errorNoThrow(errors::LoopBreak, label ? label : "");
+        }
+
+        /**
+         * @brief Break async loop.
          */
         [[noreturn]] inline void breakLoop(
                 asyncsteps::LoopLabel label = nullptr)
         {
-            state().error_loop_label = label;
+            breakLoopNoThrow(label);
             throw asyncsteps::LoopBreak(label);
+        }
+
+        /**
+         * @brief Continue async loop from the next iteration.
+         *
+         * The use is responsible for immediate return from the step function.
+         */
+        inline void continueLoopNoThrow(asyncsteps::LoopLabel label = nullptr)
+        {
+            errorNoThrow(errors::LoopCont, label ? label : "");
         }
 
         /**
@@ -830,7 +859,7 @@ namespace futoin {
         [[noreturn]] inline void continueLoop(
                 asyncsteps::LoopLabel label = nullptr)
         {
-            state().error_loop_label = label;
+            continueLoopNoThrow(label);
             throw asyncsteps::LoopContinue(label);
         }
 
