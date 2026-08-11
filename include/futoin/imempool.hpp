@@ -96,7 +96,7 @@ namespace futoin {
         /**
          * @brief Free any unused memory
          */
-        void release_memory() noexcept override{};
+        void release_memory() noexcept override {};
     };
 
     template<bool>

@@ -96,7 +96,6 @@ RawStringFormats:
   - Language: Cpp
     Delimiters:
       - 'pb'
-    Language:        TextProto
     BasedOnStyle:    google
 ReflowComments:  true
 SortIncludes:    true

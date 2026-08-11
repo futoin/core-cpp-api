@@ -125,9 +125,8 @@ namespace futoin {
                         typename Functor,
                         typename FunctorNoConst =
                                 typename std::remove_const<Functor>::type,
-                        typename = decltype(
-                                (R(FunctorNoConst::*)(A...))
-                                & FunctorNoConst::operator())>
+                        typename = decltype((R(FunctorNoConst::*)(
+                                A...)) &FunctorNoConst::operator())>
                 Function(std::reference_wrapper<Functor> f) noexcept
                 {
                     this->operator=(f);
@@ -328,7 +327,7 @@ namespace futoin {
                 ConvertCB move_cb_;
             };
         } // namespace functor_pass
-    }     // namespace details
+    } // namespace details
 } // namespace futoin
 
 //---

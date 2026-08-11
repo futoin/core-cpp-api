@@ -159,7 +159,7 @@ public:
     {
         return desc_;
     }
-    const ftnst::RequirementList& requires() const noexcept override
+    const ftnst::RequirementList& requiresList() const noexcept override
     {
         return requires_;
     }

@@ -124,8 +124,7 @@ namespace futoin {
                 template<
                         typename A,
                         typename B,
-                        template<typename>
-                        class Function>
+                        template<typename> class Function>
                 inline void once(
                         IAsyncSteps& asi,
                         const Function<void(IAsyncSteps&, A, B)>& exec_handler)
@@ -141,8 +140,7 @@ namespace futoin {
                         typename A,
                         typename B,
                         typename C,
-                        template<typename>
-                        class Function>
+                        template<typename> class Function>
                 inline void
                 once(IAsyncSteps& asi,
                      const Function<void(IAsyncSteps&, A, B, C)>& exec_handler)
@@ -160,8 +158,7 @@ namespace futoin {
                         typename B,
                         typename C,
                         typename D,
-                        template<typename>
-                        class Function>
+                        template<typename> class Function>
                 inline void once(
                         IAsyncSteps& asi,
                         const Function<void(IAsyncSteps&, A, B, C, D)>&
@@ -217,8 +214,7 @@ namespace futoin {
                 template<
                         typename A,
                         typename B,
-                        template<typename>
-                        class Function>
+                        template<typename> class Function>
                 inline void repeatable(
                         const Function<void(A, B)>& exec_handler) const
                 {
@@ -232,8 +228,7 @@ namespace futoin {
                         typename A,
                         typename B,
                         typename C,
-                        template<typename>
-                        class Function>
+                        template<typename> class Function>
                 inline void repeatable(
                         const Function<void(A, B, C)>& exec_handler) const
                 {
@@ -249,8 +244,7 @@ namespace futoin {
                         typename B,
                         typename C,
                         typename D,
-                        template<typename>
-                        class Function>
+                        template<typename> class Function>
                 inline void repeatable(
                         const Function<void(A, B, C, D)>& exec_handler) const
                 {
@@ -334,7 +328,7 @@ namespace futoin {
                     NextArgs::rem_constref<C>(),
                     NextArgs::rem_constref<D>()};
         } // namespace nextargs
-    }     // namespace details
+    } // namespace details
 } // namespace futoin
 
 //---

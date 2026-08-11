@@ -401,8 +401,7 @@ BOOST_AUTO_TEST_CASE(sync_obj) // NOLINT
     IAsyncSteps& as = ts;
 
     as.sync(mtx, [](IAsyncSteps&) {});
-    as.sync(
-            mtx, [](IAsyncSteps&) {}, [](IAsyncSteps&, ErrorCode) {});
+    as.sync(mtx, [](IAsyncSteps&) {}, [](IAsyncSteps&, ErrorCode) {});
     as.sync(mtx, [](IAsyncSteps&, int, double, std::string&&, bool) {});
     as.sync(mtx, [](IAsyncSteps&, std::vector<int>&&) {});
 }
@@ -422,7 +421,7 @@ BOOST_AUTO_TEST_CASE(stack_alloc) // NOLINT
         struct MyType
         {
             MyType() = default;
-            MyType(int a) : a(a){};
+            MyType(int a) : a(a) {};
             int a{0};
         };
 

@@ -117,7 +117,7 @@ namespace futoin {
                 LoopLabel label_;
             };
         } // namespace asyncloop
-    }     // namespace details
+    } // namespace details
 } // namespace futoin
 
 //---

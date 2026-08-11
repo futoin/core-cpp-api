@@ -83,7 +83,7 @@ namespace futoin {
 
         // Fundamental types
         // ---
-        template<typename T, FutoInTypeFlags FT, T FutoInBinaryValue::*M>
+        template<typename T, FutoInTypeFlags FT, T FutoInBinaryValue::* M>
         struct moveFundamentalHelper
         {
             static constexpr FutoInType FTN_TYPE = {FT, nullptr};
@@ -100,7 +100,7 @@ namespace futoin {
                 v = d.*M;
             }
         };
-        template<typename T, FutoInTypeFlags FT, T FutoInBinaryValue::*M>
+        template<typename T, FutoInTypeFlags FT, T FutoInBinaryValue::* M>
         constexpr FutoInType moveFundamentalHelper<T, FT, M>::FTN_TYPE;
         template<typename Any>
         struct moveHelper<bool, Any>

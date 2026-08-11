@@ -325,7 +325,7 @@ namespace futoin {
             virtual const IfaceVer& inherit() const noexcept = 0;
             virtual const ImportList& imports() const noexcept = 0;
             virtual const Desc& desc() const noexcept = 0;
-            virtual const RequirementList& requires() const noexcept = 0;
+            virtual const RequirementList& requiresList() const noexcept = 0;
             ///@}
         };
     } // namespace spectools

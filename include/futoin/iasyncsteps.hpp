@@ -617,8 +617,7 @@ namespace futoin {
                 typename FP,
                 typename V = typename C::mapped_type,
                 size_t S,
-                template<typename>
-                class ImplF,
+                template<typename> class ImplF,
                 bool map = true>
         IAsyncSteps& forEach(
                 std::reference_wrapper<C> cr,
@@ -660,8 +659,7 @@ namespace futoin {
                 typename FP,
                 typename V = decltype(C().back()),
                 size_t S,
-                template<typename>
-                class ImplF>
+                template<typename> class ImplF>
         IAsyncSteps& forEach(
                 std::reference_wrapper<C> cr,
                 details::functor_pass::Simple<FP, S, ImplF> func,
@@ -721,8 +719,7 @@ namespace futoin {
                 typename FP,
                 typename V = typename C::mapped_type,
                 size_t S,
-                template<typename>
-                class ImplF,
+                template<typename> class ImplF,
                 bool map = true>
         IAsyncSteps& forEach(
                 C&& cm,
@@ -767,8 +764,7 @@ namespace futoin {
                 typename FP,
                 typename V = decltype(C().back()),
                 size_t S,
-                template<typename>
-                class ImplF>
+                template<typename> class ImplF>
         IAsyncSteps& forEach(
                 C&& cm,
                 details::functor_pass::Simple<FP, S, ImplF> func,
