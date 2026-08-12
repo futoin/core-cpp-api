@@ -1,11 +1,26 @@
 
-### FutoIn C++ API
+### FutoIn Core C++ API
 
 This is a primary FutoIn library for loose coupling of FutoIn users and
 actual implementations of FutoIn concepts.
 
-Current focus is still on C++11 to rely on well established and tested versions
-of toolchain.
+Current focus is still on C++11 as the primary focus is mission critical
+software, which may not use the bleeding edge toolchains.
+
+### Mirrors
+
+This FutoIn sub-project:
+
+- [Codeberg: FutoIn Core C++ API](https://codeberg.org/futoin/core-cpp-api)
+- [GitHub: FutoIn Core C++ API](https://github.com/futoin/core-cpp-api)
+- [GitLab: FutoIn Core C++ API](https://gitlab.com/futoin/core/cpp/api)
+
+All-in-one FutoIn Core C++:
+
+- [Codeberg: FutoIn Core C++](https://codeberg.org/futoin/core-cpp-ri)
+- [GitHub: FutoIn Core C++](https://github.com/futoin/core-cpp-ri)
+- [GitLab: FutoIn Core C++](https://gitlab.com/futoin/core/cpp/ri)
+
 
 #### Concepts
 
@@ -64,7 +79,7 @@ support and/or architecture-specific Assembler code. It's friendly to any kind o
 security system.
 
 
-```c++
+```cpp
 
 // The only header needed.
 #include <futoin/iasyncsteps.hpp>

@@ -1,3 +1,6 @@
+=== (next) ===
+CHANGED: updated to FutoIn Public license
+
 === 0.3.2 (2026-08-11) ===
 CHANGED: FTN12 v1.15 NoThrow() API support
 CHANGED: dependency maintenance
