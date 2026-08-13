@@ -211,10 +211,10 @@ void example_business_logic(IAsyncSteps& asi)
     }
 
     // 6. Advanced error handling
-    asi.state().unhandled_error = [](ErrorCode code) {
+    asi.state().set_unhandled_error([](ErrorCode code) noexcept {
         // This handler would be called instead of default
         // std::terminate(), if unhandled error is thrown.
-    };
+    });
 
     asi.add(
             [](IAsyncSteps& asi) {

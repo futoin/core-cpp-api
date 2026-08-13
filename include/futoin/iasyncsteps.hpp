@@ -101,13 +101,8 @@ namespace futoin {
         {
         public:
             explicit BaseState(IMemPool& mem_pool) noexcept :
-                dynamic_items{StateMap::allocator_type(mem_pool)},
-                mem_pool_(&mem_pool)
-            {
-                catch_trace = [&](const std::exception& /*e*/) noexcept {
-                    last_exception = std::current_exception();
-                };
-            }
+                mem_pool_(mem_pool)
+            {}
 
             using key_type = StateMap::key_type;
             using mapped_type = StateMap::mapped_type;
@@ -118,20 +113,24 @@ namespace futoin {
             virtual mapped_type& operator[](const key_type& key) noexcept = 0;
             virtual mapped_type& operator[](key_type&& key) noexcept = 0;
 
-            inline IMemPool& mem_pool() noexcept
+            inline IMemPool& mem_pool() const noexcept
             {
-                return *mem_pool_;
+                return mem_pool_;
             }
 
-            StateMap dynamic_items;
-            ErrorMessage error_info;
-            std::exception_ptr last_exception{nullptr};
-            CatchTrace catch_trace;
-            UnhandledError unhandled_error;
-            any promise;
+            virtual const ErrorMessage& error_info() const noexcept = 0;
+            virtual const std::exception_ptr& last_exception()
+                    const noexcept = 0;
+            virtual void catch_trace(const std::exception&) noexcept = 0;
+            virtual void unhandled_error(ErrorCode) noexcept = 0;
+            virtual void set_error_info(ErrorMessage&&) noexcept = 0;
+            virtual void set_catch_trace(CatchTrace&&) noexcept = 0;
+            virtual void set_unhandled_error(UnhandledError&&) noexcept = 0;
 
         private:
-            IMemPool* mem_pool_;
+            IMemPool& mem_pool_;
+
+            friend class futoin::IAsyncSteps;
         };
 
         class State : public BaseState
@@ -139,7 +138,13 @@ namespace futoin {
         public:
             explicit State(IMemPool& mem_pool) noexcept :
                 BaseState(mem_pool),
-                dynamic_items{StateMap::allocator_type(mem_pool)}
+                dynamic_items{StateMap::allocator_type(mem_pool)},
+                catch_trace_{[&](const std::exception& /*e*/) noexcept {
+                    last_exception_ = std::current_exception();
+                }},
+                unhandled_error_{[](ErrorCode code) noexcept {
+                    FatalMsg() << "unhandled AsyncStep error " << code;
+                }}
             {}
 
             mapped_type& operator[](const key_type& key) noexcept override
@@ -152,7 +157,44 @@ namespace futoin {
                 return dynamic_items[std::forward<key_type>(key)];
             }
 
+            const ErrorMessage& error_info() const noexcept final
+            {
+                return error_info_;
+            }
+            const std::exception_ptr& last_exception() const noexcept final
+            {
+                return last_exception_;
+            }
+
+            void catch_trace(const std::exception& exc) noexcept final
+            {
+                catch_trace_(exc);
+            }
+
+            void unhandled_error(ErrorCode code) noexcept final
+            {
+                unhandled_error_(code);
+            }
+
+            void set_error_info(ErrorMessage&& error_info) noexcept
+            {
+                error_info_ = std::move(error_info);
+            }
+            void set_catch_trace(CatchTrace&& handler) noexcept final
+            {
+                catch_trace_ = handler;
+            }
+            void set_unhandled_error(UnhandledError&& handler) noexcept final
+            {
+                unhandled_error_ = handler;
+            }
+
+        private:
             StateMap dynamic_items;
+            ErrorMessage error_info_;
+            std::exception_ptr last_exception_;
+            CatchTrace catch_trace_;
+            UnhandledError unhandled_error_;
         };
 
         /**
@@ -520,7 +562,7 @@ namespace futoin {
          */
         void errorNoThrow(ErrorCode error, ErrorMessage&& error_info = {})
         {
-            state().error_info = std::move(error_info);
+            state().set_error_info(std::move(error_info));
             handle_error(error);
         }
 
@@ -928,13 +970,9 @@ namespace futoin {
         template<typename Result = void>
         std::future<Result> promise() noexcept
         {
-            auto& state = this->state();
-            using Promise = std::promise<Result>;
+            auto& promise = stack<std::promise<Result>>();
 
-            state.promise = Promise();
-            auto& promise = futoin::any_cast<Promise&>(state.promise);
-
-            state.unhandled_error = [&](ErrorCode err) {
+            state().set_unhandled_error([&](ErrorCode err) {
                 auto eptr = std::current_exception();
 
                 if (eptr == nullptr) {
@@ -942,7 +980,7 @@ namespace futoin {
                 } else {
                     promise.set_exception(eptr);
                 }
-            };
+            });
             promise_complete_step(promise);
             execute();
 

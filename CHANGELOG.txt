@@ -1,4 +1,5 @@
 === (next) ===
+BREAKING CHANGE: FTN12 v1.16 revised State object interface for ABI compatibility
 CHANGED: revised futoin::Error and futoin:ExtError to be user-thrown, introduced private UnwindException 
 NEW: FTN12 v1.16 asi.relinquish() helper
 
