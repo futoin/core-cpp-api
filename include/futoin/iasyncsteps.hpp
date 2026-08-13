@@ -171,6 +171,20 @@ namespace futoin {
 
         template<bool = false>
         void default_destroy_cb(void* /*ptr*/) noexcept {};
+
+        /**
+         * @brief A special stack unwinding exception
+         *
+         * This error is thrown only by AsyncSteps to distinguish from the
+         * freely thrown errors.
+         */
+        class UnwindException : public Error
+        {
+        private:
+            UnwindException(RawErrorCode code) noexcept : Error(code) {}
+
+            friend class futoin::IAsyncSteps;
+        };
     } // namespace asyncsteps
 
     /**
@@ -518,7 +532,7 @@ namespace futoin {
                 ErrorCode error, ErrorMessage&& error_info = {})
         {
             errorNoThrow(error, std::move(error_info));
-            throw Error(error);
+            throw asyncsteps::UnwindException(error);
         }
 #endif
 
@@ -847,7 +861,7 @@ namespace futoin {
                 asyncsteps::LoopLabel label = nullptr)
         {
             breakLoopNoThrow(label);
-            throw asyncsteps::LoopBreak(label);
+            throw asyncsteps::UnwindException(errors::LoopBreak);
         }
 #endif
 
@@ -869,7 +883,7 @@ namespace futoin {
                 asyncsteps::LoopLabel label = nullptr)
         {
             continueLoopNoThrow(label);
-            throw asyncsteps::LoopContinue(label);
+            throw asyncsteps::UnwindException(errors::LoopCont);
         }
 #endif
 

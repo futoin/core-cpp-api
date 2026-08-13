@@ -69,7 +69,7 @@ namespace futoin {
     using ErrorMessage = futoin::string;
 
     /**
-     * @brief Canonical FutoIn Error
+     * @brief Canonical FutoIn Error to throw without AsyncSteps instance
      */
     class Error : public std::runtime_error
     {
@@ -78,7 +78,7 @@ namespace futoin {
     };
 
     /**
-     * @brief Externded error to throw without AsyncSteps instance
+     * @brief Exterded error to throw without AsyncSteps instance
      */
     class ExtError : public std::runtime_error
     {

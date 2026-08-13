@@ -391,13 +391,14 @@ BOOST_AUTO_TEST_CASE(async_loop_control) // NOLINT
     IAsyncSteps& as = ts;
 
 #ifndef FUTOIN_NO_EXC
-    BOOST_CHECK_THROW(as.breakLoop(), asyncsteps::LoopBreak);
+    BOOST_CHECK_THROW(as.breakLoop(), asyncsteps::UnwindException);
 
-    BOOST_CHECK_THROW(as.breakLoop("Some Label"), asyncsteps::LoopBreak);
+    BOOST_CHECK_THROW(as.breakLoop("Some Label"), asyncsteps::UnwindException);
 
-    BOOST_CHECK_THROW(as.continueLoop(), asyncsteps::LoopContinue);
+    BOOST_CHECK_THROW(as.continueLoop(), asyncsteps::UnwindException);
 
-    BOOST_CHECK_THROW(as.continueLoop("Some Label"), asyncsteps::LoopContinue);
+    BOOST_CHECK_THROW(
+            as.continueLoop("Some Label"), asyncsteps::UnwindException);
 #endif
 
     as.breakLoopNoThrow();

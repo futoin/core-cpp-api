@@ -85,40 +85,6 @@ namespace futoin {
                 std::size_t i;
                 LoopLabel label;
             };
-
-            //---
-            class LoopBreak : public Error
-            {
-            public:
-                LoopBreak(LoopLabel label) :
-                    Error(errors::LoopBreak), label_(label)
-                {}
-
-                inline LoopLabel label()
-                {
-                    return label_;
-                }
-
-            private:
-                LoopLabel label_;
-            };
-
-            //---
-            class LoopContinue : public Error
-            {
-            public:
-                LoopContinue(LoopLabel label) :
-                    Error(errors::LoopCont), label_(label)
-                {}
-
-                inline LoopLabel label()
-                {
-                    return label_;
-                }
-
-            private:
-                LoopLabel label_;
-            };
         } // namespace asyncloop
     } // namespace details
 } // namespace futoin

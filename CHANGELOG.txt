@@ -1,3 +1,6 @@
+=== (next) ===
+CHANGED: revised futoin::Error and futoin:ExtError to be user-thrown, introduced private UnwindException 
+
 === 0.3.3 (2026-08-13) ===
 CHANGED: updated to FutoIn Public license
 NEW: support for -fno-exceptions with FUTOIN_WITH_EXC=OFF
