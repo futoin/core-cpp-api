@@ -23,6 +23,9 @@
 //---
 
 namespace futoin {
+    /**
+     * @private
+     */
     namespace details {
         //---
         /**

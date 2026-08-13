@@ -143,13 +143,7 @@ endif()
 if (FUTOIN_WITH_DOCS)
     find_package(Doxygen REQUIRED dot)
 
-    add_custom_target(
-        docs-${PROJECT_NAME} ALL
-        COMMAND ${CMAKE_COMMAND} -E env "BUILD_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${DOXYGEN_EXECUTABLE}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
-    )
-    # prevent Doxygen segfault on invalid code
-    add_dependencies(docs-${PROJECT_NAME} ${PROJECT_NAME})
+    doxygen_add_docs(docs-${PROJECT_NAME})
 endif()
 
 #--------------------------------------

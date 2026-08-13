@@ -31,7 +31,12 @@
 /**
  * @brief Main namespace for FutoIn project
  */
-namespace futoin {}
+namespace futoin {
+    /**
+     * @brief Reference Implementations for FutoIn Projects
+     */
+    namespace ri {}
+} // namespace futoin
 
 //---
 #endif // FUTOIN_ALL_HPP

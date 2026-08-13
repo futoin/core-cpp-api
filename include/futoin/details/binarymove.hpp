@@ -30,6 +30,9 @@
 // ---
 
 namespace futoin {
+    /**
+     * @private
+     */
     namespace details {
         template<typename T, typename Any>
         struct moveHelper;

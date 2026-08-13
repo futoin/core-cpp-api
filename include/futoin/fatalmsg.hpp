@@ -25,6 +25,9 @@
 #include <iostream>
 
 namespace futoin {
+    /**
+     * @private
+     */
     template<bool>
     struct FatalMsgHookT
     {
@@ -45,9 +48,15 @@ namespace futoin {
         static std::ostream* stream_;
     };
 
+    /**
+     * @private
+     */
     template<bool B>
     std::ostream* FatalMsgHookT<B>::stream_{&std::cerr};
 
+    /**
+     * @private
+     */
     using FatalMsgHook = FatalMsgHookT<true>;
 
     /**

@@ -26,6 +26,9 @@
 #include "./nextargs.hpp"
 
 namespace futoin {
+    /**
+     * @private
+     */
     namespace details {
         template<
                 size_t FunctorSize = functor_pass::DEFAULT_SIZE,

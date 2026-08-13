@@ -28,6 +28,9 @@
 namespace futoin {
     class IAsyncSteps;
 
+    /**
+     * @private
+     */
     namespace details {
         namespace functor_pass {
             constexpr size_t DEFAULT_ALIGN = sizeof(std::ptrdiff_t);

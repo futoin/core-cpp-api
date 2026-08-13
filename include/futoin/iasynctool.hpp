@@ -48,6 +48,9 @@ namespace futoin {
 
     protected:
         struct HandleAccessor;
+        /**
+         * @private
+         */
         struct InternalHandle
         {
             InternalHandle() noexcept = default;
@@ -190,6 +193,9 @@ namespace futoin {
         virtual void release_memory() noexcept = 0;
 
     protected:
+        /**
+         * @private
+         */
         struct HandleAccessor
         {
             HandleAccessor(Handle& handle) : handle(handle) {}

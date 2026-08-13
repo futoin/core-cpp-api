@@ -226,6 +226,9 @@ namespace futoin {
         // NOLINTNEXTLINE(readability-named-parameter)
         static void default_control(ControlMode, any&, any&) noexcept {}
 
+        /**
+         * @private
+         */
         template<
                 typename T,
                 bool is_fundamental = std::is_fundamental<T>::value
@@ -253,6 +256,9 @@ namespace futoin {
         }
     };
 
+    /**
+     * @private
+     */
     namespace details {
         template<typename T>
         typename std::enable_if<!std::is_copy_constructible<T>::value, void>::
@@ -278,6 +284,9 @@ namespace futoin {
         }
     } // namespace details
 
+    /**
+     * @private
+     */
     template<typename T>
     struct any::Accessor<T, true, true>
     {
@@ -315,6 +324,9 @@ namespace futoin {
         }
     };
 
+    /**
+     * @private
+     */
     template<typename T>
     struct any::Accessor<T, false, true>
     {
@@ -360,6 +372,9 @@ namespace futoin {
         }
     };
 
+    /**
+     * @private
+     */
     template<typename T>
     struct any::Accessor<T, false, false>
     {
@@ -418,6 +433,9 @@ namespace futoin {
         }
     };
 
+    /**
+     * @private
+     */
     template<>
     struct any::Accessor<any, false, false>
     {

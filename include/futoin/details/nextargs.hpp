@@ -31,6 +31,9 @@
 namespace futoin {
     class IAsyncSteps;
 
+    /**
+     * @private
+     */
     namespace details {
         namespace nextargs {
             //---

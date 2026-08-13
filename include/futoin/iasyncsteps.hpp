@@ -155,6 +155,9 @@ namespace futoin {
             StateMap dynamic_items;
         };
 
+        /**
+         * @private
+         */
         struct StepData
         {
             ExecPass::Storage func_storage_;
@@ -955,6 +958,9 @@ namespace futoin {
                 return true;
             }
 
+            /**
+             * @private
+             */
             struct complete_normal
             {
                 static inline void done(Future& f, IAsyncSteps& asi)
@@ -963,6 +969,9 @@ namespace futoin {
                 }
             };
 
+            /**
+             * @private
+             */
             struct complete_void
             {
                 static inline void done(Future& f, IAsyncSteps& asi)
