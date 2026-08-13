@@ -18,7 +18,7 @@ HunterGate(
 #--------------------------------------
 
 project(futoin_api
-        VERSION "0.3.3" # AUTO-REPLACE
+        VERSION "0.3.4" # AUTO-REPLACE
         LANGUAGES CXX)
 
 # Options
