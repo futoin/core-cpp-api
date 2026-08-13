@@ -378,7 +378,7 @@ BOOST_AUTO_TEST_CASE(async_error) // NOLINT
 
 #ifndef FUTOIN_NO_EXC
     BOOST_CHECK_THROW(as.error("Some Code"), futoin::Error);
-    BOOST_CHECK_THROW(as.error("Some Code", "Some message"), futoin::ExtError);
+    BOOST_CHECK_THROW(as.error("Some Code", "Some message"), futoin::Error);
 #endif
 
     as.errorNoThrow("Some Code");
