@@ -584,6 +584,22 @@ namespace futoin {
             return !operator bool();
         }
 
+        /**
+         * @brief Interrupt execution burst
+         *
+         * Relinquishes the current flow back to the event loop.
+         */
+        void relinquish() noexcept
+        {
+            add([](IAsyncSteps& asi) {
+                auto bin_handle =
+                        asi.tool().immediate([&]() { asi.success(); }).binary();
+                asi.setCancel([bin_handle](IAsyncSteps&) {
+                    IAsyncTool::Handle(bin_handle).cancel();
+                });
+            });
+        }
+
         ///@}
 
         /**
@@ -962,6 +978,7 @@ namespace futoin {
                     bool complete)
             {
                 if (future.wait_for(delay) != std::future_status::ready) {
+                    asi.relinquish();
                     return false;
                 }
 

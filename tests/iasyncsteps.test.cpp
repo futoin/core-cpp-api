@@ -449,3 +449,11 @@ BOOST_AUTO_TEST_CASE(stack_alloc) // NOLINT
         });
     });
 }
+
+BOOST_AUTO_TEST_CASE(relinquish) // NOLINT
+{
+    TestSteps ts;
+    IAsyncSteps& as = ts;
+
+    as.relinquish();
+}
