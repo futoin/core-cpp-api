@@ -507,14 +507,17 @@ namespace futoin {
             handle_error(error);
         }
 
+#ifndef FUTOIN_NO_EXC
         /**
          * @brief Step abort with specified error
          */
-        [[noreturn]] void error(ErrorCode error, ErrorMessage&& error_info = {})
+        [[noreturn]] inline void error(
+                ErrorCode error, ErrorMessage&& error_info = {})
         {
             errorNoThrow(error, std::move(error_info));
             throw Error(error);
         }
+#endif
 
         /**
          * @brief Set time limit of execution.
@@ -833,6 +836,7 @@ namespace futoin {
             errorNoThrow(errors::LoopBreak, label ? label : "");
         }
 
+#ifndef FUTOIN_NO_EXC
         /**
          * @brief Break async loop.
          */
@@ -842,6 +846,7 @@ namespace futoin {
             breakLoopNoThrow(label);
             throw asyncsteps::LoopBreak(label);
         }
+#endif
 
         /**
          * @brief Continue async loop from the next iteration.
@@ -853,6 +858,7 @@ namespace futoin {
             errorNoThrow(errors::LoopCont, label ? label : "");
         }
 
+#ifndef FUTOIN_NO_EXC
         /**
          * @brief Continue async loop from the next iteration.
          */
@@ -862,6 +868,7 @@ namespace futoin {
             continueLoopNoThrow(label);
             throw asyncsteps::LoopContinue(label);
         }
+#endif
 
         ///@}
 

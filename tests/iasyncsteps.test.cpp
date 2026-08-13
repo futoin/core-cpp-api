@@ -376,8 +376,13 @@ BOOST_AUTO_TEST_CASE(async_error) // NOLINT
     TestSteps ts;
     IAsyncSteps& as = ts;
 
+#ifndef FUTOIN_NO_EXC
     BOOST_CHECK_THROW(as.error("Some Code"), futoin::Error);
-    BOOST_CHECK_THROW(as.error("Some Code", "Some message"), futoin::Error);
+    BOOST_CHECK_THROW(as.error("Some Code", "Some message"), futoin::ExtError);
+#endif
+
+    as.errorNoThrow("Some Code");
+    as.errorNoThrow("Some Code", "Some message");
 }
 
 BOOST_AUTO_TEST_CASE(async_loop_control) // NOLINT
@@ -385,6 +390,7 @@ BOOST_AUTO_TEST_CASE(async_loop_control) // NOLINT
     TestSteps ts;
     IAsyncSteps& as = ts;
 
+#ifndef FUTOIN_NO_EXC
     BOOST_CHECK_THROW(as.breakLoop(), asyncsteps::LoopBreak);
 
     BOOST_CHECK_THROW(as.breakLoop("Some Label"), asyncsteps::LoopBreak);
@@ -392,6 +398,12 @@ BOOST_AUTO_TEST_CASE(async_loop_control) // NOLINT
     BOOST_CHECK_THROW(as.continueLoop(), asyncsteps::LoopContinue);
 
     BOOST_CHECK_THROW(as.continueLoop("Some Label"), asyncsteps::LoopContinue);
+#endif
+
+    as.breakLoopNoThrow();
+    as.breakLoopNoThrow("Some Label");
+    as.continueLoopNoThrow();
+    as.continueLoopNoThrow("Some Label");
 }
 
 BOOST_AUTO_TEST_CASE(sync_obj) // NOLINT

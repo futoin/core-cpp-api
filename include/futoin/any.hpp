@@ -42,6 +42,10 @@
 #    include <any>
 #endif
 
+#ifdef FUTOIN_NO_EXC
+#    include <exception>
+#endif
+
 namespace futoin {
 #ifdef FUTOIN_USING_OWN_ANY
     static inline futoin::string demangle(const std::type_info& ti)
@@ -62,7 +66,11 @@ namespace futoin {
     {
         std::cerr << "[ERROR] bad any cast: " << demangle(src) << " -> "
                   << demangle(dst) << std::endl;
+#    ifdef FUTOIN_NO_EXC
+        std::terminate();
+#    else
         throw std::bad_cast();
+#    endif
     }
 
     /**
@@ -254,7 +262,11 @@ namespace futoin {
             (void) p;
             std::cerr << "[ERROR] no copy c-tor: " << demangle(typeid(other))
                       << std::endl;
+#    ifdef FUTOIN_NO_EXC
+            std::terminate();
+#    else
             throw std::runtime_error("Missing copy c-tor");
+#    endif
         }
 
         template<typename T>
